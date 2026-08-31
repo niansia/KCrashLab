@@ -10,6 +10,6 @@ public sealed class DeterministicFuzzEngine(IReadOnlyList<ICaseMutationOperator>
         long campaignSeed,
         Func<CanonicalCase, CancellationToken, Task<FuzzObservation>> evaluator,
         CancellationToken cancellationToken)
-    => new PolicyDrivenFuzzEngine(operators, FuzzPolicySet.NoveltyEnergy()).RunAsync(
+    => new PolicyDrivenFuzzEngine(operators, FuzzPolicySet.NoveltyEnergyRanked()).RunAsync(
         seed, budget, campaignSeed, evaluator, cancellationToken);
 }

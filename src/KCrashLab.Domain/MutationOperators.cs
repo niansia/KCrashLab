@@ -5,11 +5,14 @@ using KCrashLab.Contracts;
 
 namespace KCrashLab.Domain;
 
-public sealed record MutationContext(long CampaignSeed, int MaximumCandidatesPerOperator = 64);
+public sealed record MutationContext(
+    long CampaignSeed,
+    int MaximumCandidatesPerOperator = MutationCandidateSampling.DefaultMaximumCandidatesPerOperator);
 
 public static class MutationCandidateSampling
 {
     public const string AlgorithmId = "HASH_RANKED_V1";
+    public const int DefaultMaximumCandidatesPerOperator = 64;
 
     public static IEnumerable<CanonicalCase> Select(
         IEnumerable<CanonicalCase> candidates,

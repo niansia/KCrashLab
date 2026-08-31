@@ -59,7 +59,7 @@ public static class E2ExperimentArtifacts
             trials = result.Trials,
             modes = result.Modes,
             paired_outcomes = result.PairedOutcomes,
-            interpretation = "The sequence-length cap is the only experimental variable; no-finding runs are censored at exhaustion or budget.",
+            interpretation = "The sequence-length cap is the only experimental variable; no-finding runs are censored at the scheduler limit or execution budget.",
             claims = new
             {
                 kernel_crashes = "NOT_CLAIMED",

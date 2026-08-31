@@ -13,9 +13,9 @@ public sealed class E1ExperimentTests
         var arms = new[]
         {
             FuzzPolicySet.KeepAllUniform(),
-            FuzzPolicySet.KeepAllEnergy(),
+            FuzzPolicySet.KeepAllEnergyRanked(),
             FuzzPolicySet.NoveltyUniform(),
-            FuzzPolicySet.NoveltyEnergy()
+            FuzzPolicySet.NoveltyEnergyRanked()
         };
 
         Assert.Equal(4, arms.Select(static arm => arm.StrategyId).Distinct(StringComparer.Ordinal).Count());

@@ -18,7 +18,7 @@ dotnet run --project src/KCrashLab.Cli --configuration Release -- fuzz run `
 dotnet run --project src/KCrashLab.Cli --configuration Release -- fuzz verify results/recorded/g3
 ```
 
-The CLI `novelty` alias selects `NOVELTY_ONLY_ENERGY_V2`.
+The CLI `novelty` alias selects `NOVELTY_ONLY_ENERGY_RANKED_V2`.
 
 ## Recorded result
 

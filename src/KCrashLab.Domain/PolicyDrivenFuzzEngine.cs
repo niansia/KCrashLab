@@ -96,12 +96,13 @@ public sealed class UniformParentSelectionPolicy : IParentSelectionPolicy
         decision.Next(candidates.Count);
 }
 
-public sealed class EnergyParentSelectionPolicy : IParentSelectionPolicy
+public sealed class GreedyEnergyRankedParentSelectionPolicy : IParentSelectionPolicy
 {
-    public string PolicyId => "ENERGY";
+    public string PolicyId => "ENERGY_RANKED_V1";
 
     public int SelectIndex(IReadOnlyList<ParentSelectionCandidate> candidates, DeterministicDecisionContext decision)
     {
+        _ = decision;
         if (candidates.Count == 0)
         {
             throw new InvalidOperationException("Cannot select from an empty corpus.");
@@ -133,34 +134,37 @@ public sealed class UniformCandidateSelectionPolicy : ICandidateSelectionPolicy
 }
 
 public sealed record FuzzPolicySet(
+    string StrategyId,
     ICorpusAdmissionPolicy CorpusAdmission,
     IParentSelectionPolicy ParentSelection,
     IOperatorSelectionPolicy OperatorSelection,
     ICandidateSelectionPolicy CandidateSelection)
 {
-    public string StrategyId => $"{CorpusAdmission.PolicyId}_{ParentSelection.PolicyId}_V2";
-
     public static FuzzPolicySet KeepAllUniform() => new(
+        "KEEP_ALL_UNIFORM_V2",
         new KeepAllCorpusAdmissionPolicy(),
         new UniformParentSelectionPolicy(),
         new UniformOperatorSelectionPolicy(),
         new UniformCandidateSelectionPolicy());
 
-    public static FuzzPolicySet KeepAllEnergy() => new(
+    public static FuzzPolicySet KeepAllEnergyRanked() => new(
+        "KEEP_ALL_ENERGY_RANKED_V2",
         new KeepAllCorpusAdmissionPolicy(),
-        new EnergyParentSelectionPolicy(),
+        new GreedyEnergyRankedParentSelectionPolicy(),
         new UniformOperatorSelectionPolicy(),
         new UniformCandidateSelectionPolicy());
 
     public static FuzzPolicySet NoveltyUniform() => new(
+        "NOVELTY_ONLY_UNIFORM_V2",
         new NoveltyOnlyCorpusAdmissionPolicy(),
         new UniformParentSelectionPolicy(),
         new UniformOperatorSelectionPolicy(),
         new UniformCandidateSelectionPolicy());
 
-    public static FuzzPolicySet NoveltyEnergy() => new(
+    public static FuzzPolicySet NoveltyEnergyRanked() => new(
+        "NOVELTY_ONLY_ENERGY_RANKED_V2",
         new NoveltyOnlyCorpusAdmissionPolicy(),
-        new EnergyParentSelectionPolicy(),
+        new GreedyEnergyRankedParentSelectionPolicy(),
         new UniformOperatorSelectionPolicy(),
         new UniformCandidateSelectionPolicy());
 }
