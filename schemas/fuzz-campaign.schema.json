@@ -10,6 +10,7 @@
     "budget",
     "executions",
     "termination_reason",
+    "scheduling_policy",
     "scheduling_iterations",
     "scheduling_limit",
     "duplicate_candidate_skips",
@@ -59,6 +60,9 @@
         "SCHEDULER_ITERATION_LIMIT_REACHED"
       ]
     },
+    "scheduling_policy": {
+      "const": "MAX_4096_OR_BUDGET_X_OPERATOR_COUNT_X_32_V1"
+    },
     "scheduling_iterations": {
       "type": "integer",
       "minimum": 0
@@ -79,8 +83,7 @@
       "const": "HASH_RANKED_V1"
     },
     "max_candidates": {
-      "type": "integer",
-      "minimum": 1
+      "const": 64
     },
     "seed_case_id": {
       "type": "string",
@@ -165,6 +168,7 @@
         "recorded_at_utc",
         "git_commit",
         "source_tree_digest",
+        "source_tree_digest_algorithm",
         "experiment_definition_digest",
         "case_schema_version",
         "engine_version"
@@ -201,6 +205,12 @@
               "type": "string",
               "pattern": "^[a-f0-9]{64}$"
             }
+          ]
+        },
+        "source_tree_digest_algorithm": {
+          "enum": [
+            "UNSPECIFIED",
+            "GIT_TREE_SHA256_V1"
           ]
         },
         "experiment_definition_digest": {

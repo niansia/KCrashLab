@@ -57,11 +57,54 @@ public sealed class ExperimentProvenanceBuilderTests
             ExperimentProvenanceBuilder.SourceCommitTime,
             ExperimentProvenanceBuilder.Uncommitted,
             digest,
+            ExperimentProvenanceBuilder.GitTreeDigestAlgorithm,
             digest,
             1,
             ExperimentProvenanceBuilder.EngineVersion);
 
         Assert.Throws<InvalidDataException>(() => ExperimentProvenanceBuilder.Validate(provenance));
+    }
+
+    [Fact]
+    public async Task SourceTreeDigestUsesPinnedGitObjectsInsteadOfCheckoutBytes()
+    {
+        var repository = TestPaths.NewTemporaryDirectory();
+        try
+        {
+            await RunGitAsync(repository, "init");
+            await RunGitAsync(repository, "config", "user.name", "KCrashLab Tests");
+            await RunGitAsync(repository, "config", "user.email", "kcrashlab-tests@example.invalid");
+            await File.WriteAllTextAsync(Path.Combine(repository, "README.md"), "first\n");
+            await RunGitAsync(repository, "add", "README.md");
+            await RunGitAsync(repository, "commit", "-m", "first");
+            var firstCommit = await RunGitAsync(repository, "rev-parse", "HEAD");
+
+            var committedDigest = await ExperimentProvenanceBuilder.SourceTreeDigestAsync(
+                repository,
+                firstCommit,
+                CancellationToken.None);
+            await File.WriteAllBytesAsync(
+                Path.Combine(repository, "README.md"),
+                System.Text.Encoding.UTF8.GetBytes("different checkout bytes\r\n"));
+            var dirtyCheckoutDigest = await ExperimentProvenanceBuilder.SourceTreeDigestAsync(
+                repository,
+                firstCommit,
+                CancellationToken.None);
+            Assert.Equal(committedDigest, dirtyCheckoutDigest);
+
+            await RunGitAsync(repository, "add", "README.md");
+            await RunGitAsync(repository, "commit", "-m", "second");
+            var secondCommit = await RunGitAsync(repository, "rev-parse", "HEAD");
+            var secondDigest = await ExperimentProvenanceBuilder.SourceTreeDigestAsync(
+                repository,
+                secondCommit,
+                CancellationToken.None);
+            Assert.NotEqual(committedDigest, secondDigest);
+        }
+        finally
+        {
+            DeleteTemporaryGitRepository(repository);
+        }
     }
 
     private static async Task<string> RunGitAsync(string repository, params string[] arguments)

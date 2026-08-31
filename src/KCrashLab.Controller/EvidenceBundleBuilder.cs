@@ -41,6 +41,9 @@ public sealed class EvidenceBundleBuilder
         var expectedCampaignId = DeterministicIdentity.CreateGuid("campaign", provenance.Scenario, original.CaseId, provenance.CampaignSeed);
         var expectedExperimentDigest = ExperimentProvenanceBuilder.M1ExperimentDefinitionDigest(
             provenance.Scenario,
+            provenance.ScenarioFixtureSchemaVersion,
+            provenance.ScenarioFixtureDigestAlgorithm,
+            provenance.ScenarioFixtureDigest,
             provenance.CampaignSeed,
             original.CaseId,
             campaign.Signature,
@@ -55,6 +58,7 @@ public sealed class EvidenceBundleBuilder
         var expectedReplayDigest = ExperimentProvenanceBuilder.M1ReplayPolicyDefinitionDigest(campaign.Signature, replay.Policy);
         if (campaign.CampaignId != expectedCampaignId
             || !string.Equals(campaign.Scenario, provenance.Scenario, StringComparison.Ordinal)
+            || !MatchesSimulationEnvironment(campaign.CapabilityReport, provenance)
             || !string.Equals(provenance.ExperimentDefinitionDigest, expectedExperimentDigest, StringComparison.Ordinal)
             || !string.Equals(provenance.MinimizerDefinitionDigest, expectedMinimizerDigest, StringComparison.Ordinal)
             || !string.Equals(provenance.ReplayPolicyDefinitionDigest, expectedReplayDigest, StringComparison.Ordinal))
@@ -98,11 +102,18 @@ public sealed class EvidenceBundleBuilder
 
         await WriteJsonAsync(Path.Combine(root, "environment.json"), new
         {
-            schema_version = 1,
+            schema_version = 2,
             execution_mode = "SIMULATED",
-            backend = "simulated",
-            simulator_version = "1.0.0",
-            capability_report = campaign.CapabilityReport
+            backend = SimulationEvidenceContract.BackendId,
+            simulator_version = SimulationEvidenceContract.SimulatorVersion,
+            virtual_epoch_utc = SimulationEvidenceContract.VirtualEpochUtc,
+            scenario_fixture = new
+            {
+                schema_version = provenance.ScenarioFixtureSchemaVersion,
+                name = provenance.Scenario,
+                digest_algorithm = provenance.ScenarioFixtureDigestAlgorithm,
+                digest = provenance.ScenarioFixtureDigest
+            }
         }, cancellationToken).ConfigureAwait(false);
 
         await WriteJsonAsync(Path.Combine(root, "decision.json"), new
@@ -175,6 +186,27 @@ public sealed class EvidenceBundleBuilder
     private static string ReadScenario(CampaignRunResult campaign)
     {
         return campaign.Scenario;
+    }
+
+    private static bool MatchesSimulationEnvironment(
+        CapabilityReport report,
+        MinimizationReplayProvenance provenance)
+    {
+        return report.ExecutionMode == "SIMULATED"
+            && report.ObservedAtUtc.ToUniversalTime().ToString("O", System.Globalization.CultureInfo.InvariantCulture)
+                == SimulationEvidenceContract.VirtualEpochUtc
+            && report.Evidence.TryGetValue("backend_contract", out var backend)
+            && backend == SimulationEvidenceContract.BackendId
+            && report.Evidence.TryGetValue("simulator_version", out var simulatorVersion)
+            && simulatorVersion == SimulationEvidenceContract.SimulatorVersion
+            && report.Evidence.TryGetValue("scenario_fixture_name", out var scenario)
+            && scenario == provenance.Scenario
+            && report.Evidence.TryGetValue("scenario_fixture_schema_version", out var schemaVersion)
+            && schemaVersion == provenance.ScenarioFixtureSchemaVersion.ToString(System.Globalization.CultureInfo.InvariantCulture)
+            && report.Evidence.TryGetValue("scenario_fixture_digest_algorithm", out var digestAlgorithm)
+            && digestAlgorithm == provenance.ScenarioFixtureDigestAlgorithm
+            && report.Evidence.TryGetValue("scenario_fixture_digest", out var digest)
+            && digest == provenance.ScenarioFixtureDigest;
     }
 
     private static async Task WriteJsonAsync(string path, object value, CancellationToken cancellationToken)

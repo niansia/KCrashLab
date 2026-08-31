@@ -72,6 +72,20 @@ public sealed class EvidenceBundleVerifier
 
             var provenance = ExperimentProvenanceBuilder.ParseAndValidateMinimizationReplay(
                 decision.RootElement.GetProperty("provenance"));
+            var environmentRoot = environment.RootElement;
+            var scenarioFixture = environmentRoot.GetProperty("scenario_fixture");
+            if (environmentRoot.GetProperty("schema_version").GetInt32() != 2
+                || environmentRoot.GetProperty("backend").GetString() != SimulationEvidenceContract.BackendId
+                || environmentRoot.GetProperty("simulator_version").GetString() != SimulationEvidenceContract.SimulatorVersion
+                || environmentRoot.GetProperty("virtual_epoch_utc").GetString() != SimulationEvidenceContract.VirtualEpochUtc
+                || scenarioFixture.GetProperty("schema_version").GetInt32() != provenance.ScenarioFixtureSchemaVersion
+                || scenarioFixture.GetProperty("name").GetString() != provenance.Scenario
+                || scenarioFixture.GetProperty("digest_algorithm").GetString() != provenance.ScenarioFixtureDigestAlgorithm
+                || scenarioFixture.GetProperty("digest").GetString() != provenance.ScenarioFixtureDigest)
+            {
+                errors.Add("environment.json does not match the canonical simulator provenance.");
+            }
+
             var originalBytes = await File.ReadAllBytesAsync(Path.Combine(bundleRoot, "inputs", "original.case.json"), cancellationToken).ConfigureAwait(false);
             var original = CaseCanonicalizer.Parse(originalBytes);
             var minimizedBytes = await File.ReadAllBytesAsync(Path.Combine(bundleRoot, "inputs", "minimized.case.json"), cancellationToken).ConfigureAwait(false);
@@ -107,6 +121,9 @@ public sealed class EvidenceBundleVerifier
 
             var expectedExperimentDigest = ExperimentProvenanceBuilder.M1ExperimentDefinitionDigest(
                 provenance.Scenario,
+                provenance.ScenarioFixtureSchemaVersion,
+                provenance.ScenarioFixtureDigestAlgorithm,
+                provenance.ScenarioFixtureDigest,
                 provenance.CampaignSeed,
                 original.CaseId,
                 statedSignature,

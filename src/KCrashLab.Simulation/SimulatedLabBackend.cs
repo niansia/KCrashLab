@@ -8,9 +8,11 @@ namespace KCrashLab.Simulation;
 
 public sealed class SimulatedLabBackend : ILabBackend
 {
-    public const string Version = "1.0.0";
+    public const string Version = SimulationEvidenceContract.SimulatorVersion;
 
-    private static readonly DateTimeOffset Epoch = DateTimeOffset.Parse("2026-08-31T00:00:00Z", System.Globalization.CultureInfo.InvariantCulture);
+    private static readonly DateTimeOffset Epoch = DateTimeOffset.Parse(
+        SimulationEvidenceContract.VirtualEpochUtc,
+        System.Globalization.CultureInfo.InvariantCulture);
     private readonly ScenarioFixture fixture;
     private readonly VirtualClock clock = new(Epoch);
     private CampaignSpec? activeSpec;
@@ -28,7 +30,30 @@ public sealed class SimulatedLabBackend : ILabBackend
     public Task<CapabilityReport> ProbeAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Task.FromResult(HostCapabilityProbe.Probe(Epoch));
+        IReadOnlyDictionary<string, string> evidence = new SortedDictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["backend_contract"] = SimulationEvidenceContract.BackendId,
+            ["scenario_fixture_digest"] = ScenarioFixtureIdentity.DefinitionDigest(fixture),
+            ["scenario_fixture_digest_algorithm"] = SimulationEvidenceContract.ScenarioFixtureDigestAlgorithm,
+            ["scenario_fixture_name"] = fixture.Name,
+            ["scenario_fixture_schema_version"] = fixture.SchemaVersion.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            ["simulator_version"] = Version,
+            ["virtual_epoch_utc"] = SimulationEvidenceContract.VirtualEpochUtc
+        };
+        return Task.FromResult(new CapabilityReport(
+            1,
+            "SIMULATED",
+            Epoch,
+            new HostDescription("KCrashLab deterministic simulator", Version, "VIRTUAL", null),
+            new CapabilitySet(
+                CapabilityStatus.Blocked,
+                CapabilityStatus.Blocked,
+                CapabilityStatus.Blocked,
+                CapabilityStatus.Blocked,
+                CapabilityStatus.Blocked),
+            CapabilityStatus.Blocked,
+            ["Simulation semantics are independent of host kernel-lab capabilities."],
+            evidence));
     }
 
     public Task<LabLease> AcquireAsync(CampaignSpec spec, CancellationToken cancellationToken)

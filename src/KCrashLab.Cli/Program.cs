@@ -200,8 +200,7 @@ internal static class KCrashCli
 
         var provenance = await ExperimentProvenanceBuilder.ForMinimizationReplayAsync(
             Environment.CurrentDirectory,
-            fixture.Name,
-            fixture.Seed,
+            fixture,
             canonical,
             result.Signature,
             maximumOracleAttempts,

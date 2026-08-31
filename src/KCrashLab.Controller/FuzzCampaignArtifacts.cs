@@ -59,6 +59,7 @@ public static class FuzzCampaignArtifacts
             budget = result.Budget,
             executions = result.Executions,
             termination_reason = result.TerminationReason,
+            scheduling_policy = result.SchedulingPolicy,
             scheduling_iterations = result.SchedulingIterations,
             scheduling_limit = result.SchedulingLimit,
             duplicate_candidate_skips = result.DuplicateCandidateSkips,
@@ -200,13 +201,20 @@ public static class FuzzCampaignArtifacts
                 errors.Add("summary.json contains invalid budget or execution counts.");
             }
             var terminationReason = summaryRoot.GetProperty("termination_reason").GetString();
+            var schedulingPolicy = summaryRoot.GetProperty("scheduling_policy").GetString();
             var schedulingIterations = summaryRoot.GetProperty("scheduling_iterations").GetInt32();
             var schedulingLimit = summaryRoot.GetProperty("scheduling_limit").GetInt32();
+            var expectedSchedulingLimit = FuzzSchedulingPolicy.ComputeIterationLimit(
+                budget,
+                DefaultMutationOperators.Create().Count);
             if (terminationReason is not ("BUDGET_REACHED" or "SCHEDULER_ITERATION_LIMIT_REACHED")
+                || schedulingPolicy != FuzzSchedulingPolicy.AlgorithmId
                 || schedulingIterations < 0 || schedulingIterations > schedulingLimit
                 || (terminationReason == "BUDGET_REACHED") != (executions == budget)
+                || (terminationReason == "SCHEDULER_ITERATION_LIMIT_REACHED" && schedulingIterations != schedulingLimit)
+                || schedulingLimit != expectedSchedulingLimit
                 || summaryRoot.GetProperty("candidate_enumeration").GetString() != MutationCandidateSampling.AlgorithmId
-                || summaryRoot.GetProperty("max_candidates").GetInt32() < 1
+                || summaryRoot.GetProperty("max_candidates").GetInt32() != MutationCandidateSampling.DefaultMaximumCandidatesPerOperator
                 || summaryRoot.GetProperty("duplicate_candidate_skips").GetInt32() < 0
                 || summaryRoot.GetProperty("empty_candidate_polls").GetInt32() < 0)
             {

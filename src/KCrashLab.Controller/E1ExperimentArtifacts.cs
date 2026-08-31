@@ -349,10 +349,10 @@ public static class E1ExperimentArtifacts
                 <p class="muted">Paired deterministic trials against one synthetic state-machine target. Corpus admission (keep-all/novelty-only) is crossed with parent selection (uniform/energy). Operator and candidate selection remain uniform in every arm. This report makes no claim about real drivers or statistical significance.</p>
                 <p>Budget: <strong>{{result.BudgetPerTrial}}</strong> executions per trial; paired trials: <strong>{{result.TrialsPerStrategy}}</strong>; base seed: <code>{{result.BaseCampaignSeed}}</code>.</p>
                 <table><thead><tr><th>Strategy</th><th>Discoveries</th><th>Censored</th><th>Median [Q1, Q3] first finding*</th></tr></thead><tbody>{{rows}}</tbody></table>
-                <p class="muted">* Quantiles use linear interpolation and include successful trials only. No-finding trials are right-censored at the fixed budget and listed separately.</p>
+                <p class="muted">* Quantiles use linear interpolation and include successful trials only. No-finding trials are right-censored at their actual completed execution count and listed separately.</p>
                 <h2>Censoring-aware discovery curve</h2>
                 {{BuildSurvivalSvg(result)}}
-                <p class="muted">The step curve is 1 − Kaplan–Meier survival. Censored trials remain in the risk set through execution {{result.BudgetPerTrial}}.</p>
+                <p class="muted">The step curve is 1 − Kaplan–Meier survival. Censored trials remain in the risk set through their recorded execution count.</p>
                 <h2>Planned paired contrasts</h2>
                 <table><thead><tr><th>Contrast</th><th>Left</th><th>Right</th><th>Both</th><th>Left only</th><th>Right only</th><th>Neither</th></tr></thead><tbody>{{contrasts}}</tbody></table>
                 <p class="muted">These counts are descriptive. Statistical significance and external validity are not assessed.</p>

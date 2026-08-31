@@ -1,3 +1,4 @@
+using KCrashLab.Contracts;
 using KCrashLab.Controller;
 using KCrashLab.Domain;
 using KCrashLab.Simulation;
@@ -72,5 +73,38 @@ public sealed class E1ExperimentTests
         {
             Directory.Delete(temporary, recursive: true);
         }
+    }
+
+    [Fact]
+    public void SurvivalCurveCensorsAtActualCompletedExecution()
+    {
+        var trials = new[]
+        {
+            new E1TrialResult(1, E1ExperimentRunner.NoveltyUniform, 10, 10, false, null, 1, 1, 0, 0),
+            new E1TrialResult(2, E1ExperimentRunner.NoveltyUniform, 11, 20, true, 15, 2, 2, 1, 1)
+        };
+
+        var curve = E1ExperimentRunner.BuildSurvivalCurve(trials, budgetPerTrial: 256);
+
+        Assert.Collection(
+            curve,
+            point =>
+            {
+                Assert.Equal(0, point.Execution);
+                Assert.Equal(2, point.AtRisk);
+            },
+            point =>
+            {
+                Assert.Equal(10, point.Execution);
+                Assert.Equal(2, point.AtRisk);
+                Assert.Equal(1, point.Censored);
+            },
+            point =>
+            {
+                Assert.Equal(15, point.Execution);
+                Assert.Equal(1, point.AtRisk);
+                Assert.Equal(1, point.Discoveries);
+                Assert.Equal(0d, point.SurvivalProbability);
+            });
     }
 }

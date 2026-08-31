@@ -87,28 +87,36 @@ public static class E1ExperimentRunner
         IReadOnlyList<E1TrialResult> trials,
         int budgetPerTrial)
     {
+        ArgumentNullException.ThrowIfNull(trials);
+        ArgumentOutOfRangeException.ThrowIfLessThan(budgetPerTrial, 1);
         var points = new List<E1SurvivalPoint>();
         foreach (var strategyGroup in trials
                      .GroupBy(static trial => trial.Strategy, StringComparer.Ordinal)
                      .OrderBy(static group => group.Key, StringComparer.Ordinal))
         {
             var strategyTrials = strategyGroup.ToArray();
+            if (strategyTrials.Any(trial =>
+                    trial.Executions < 1
+                    || trial.Executions > budgetPerTrial
+                    || trial.Found != trial.FirstFindingExecution.HasValue
+                    || (trial.FirstFindingExecution.HasValue
+                        && (trial.FirstFindingExecution.Value < 1 || trial.FirstFindingExecution.Value > trial.Executions))))
+            {
+                throw new InvalidDataException("E1 trial outcome is inconsistent with its execution bounds.");
+            }
+
             var atRisk = strategyTrials.Length;
             var survival = 1d;
             points.Add(new E1SurvivalPoint(strategyGroup.Key, 0, atRisk, 0, 0, survival, 0));
             var eventTimes = strategyTrials
-                .Where(static trial => trial.FirstFindingExecution.HasValue)
-                .Select(static trial => trial.FirstFindingExecution!.Value)
-                .Append(budgetPerTrial)
+                .Select(static trial => trial.FirstFindingExecution ?? trial.Executions)
                 .Distinct()
                 .Order()
                 .ToArray();
             foreach (var execution in eventTimes)
             {
                 var discoveries = strategyTrials.Count(trial => trial.FirstFindingExecution == execution);
-                var censored = execution == budgetPerTrial
-                    ? strategyTrials.Count(static trial => !trial.Found)
-                    : 0;
+                var censored = strategyTrials.Count(trial => !trial.Found && trial.Executions == execution);
                 if (discoveries > 0)
                 {
                     survival *= 1d - ((double)discoveries / atRisk);

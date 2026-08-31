@@ -38,6 +38,7 @@ public sealed record FuzzCampaignResult(
     int Budget,
     int Executions,
     string TerminationReason,
+    string SchedulingPolicy,
     int SchedulingIterations,
     int SchedulingLimit,
     int DuplicateCandidateSkips,
