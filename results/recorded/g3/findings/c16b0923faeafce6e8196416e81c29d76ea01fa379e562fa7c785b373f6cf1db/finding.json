@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "execution_mode": "SIMULATED",
+  "signature_version": 1,
+  "signature": "c16b0923faeafce6e8196416e81c29d76ea01fa379e562fa7c785b373f6cf1db",
+  "first_case_id": "98d91fc6927492885a8c5dc14f7be6a93934037c399321bb5243ef2243c51a43",
+  "first_execution": 175,
+  "occurrences": 48,
+  "classification": "SYNTHETIC_DISCOVERY",
+  "kernel_crash": "NOT_CLAIMED",
+  "root_cause": "NOT_CLAIMED",
+  "exploitability": "NOT_ASSESSED"
+}

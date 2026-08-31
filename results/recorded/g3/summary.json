@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "execution_mode": "SIMULATED",
+  "strategy": "NOVELTY_ONLY_ENERGY_V2",
+  "campaign_seed": 20260831,
+  "budget": 256,
+  "executions": 256,
+  "seed_case_id": "18e1be2d985316a623355afa5a9a8854d8b9361ec07eb878a51aeac302a0148a",
+  "corpus_count": 88,
+  "coverage_count": 77,
+  "raw_synthetic_failures": 48,
+  "exact_signatures": 1,
+  "provenance": {
+    "recorded_at_utc": "2026-08-31T00:00:00Z",
+    "git_commit": "55a65c44612c26b7e2c126ce2d22d04186d3634f",
+    "source_tree_digest": "bfc398f4c438ee2bda73a9ca9a34e714563015f593d64c23fd495a9e1cea2065",
+    "experiment_definition_digest": "c95b09b6e5eec59244a1ccbe076caf94fc2390328cd01d51bb0e711b16189698",
+    "case_schema_version": 1,
+    "engine_version": "1.3.0-sim"
+  },
+  "findings": [
+    {
+      "signature": "c16b0923faeafce6e8196416e81c29d76ea01fa379e562fa7c785b373f6cf1db",
+      "first_case_id": "98d91fc6927492885a8c5dc14f7be6a93934037c399321bb5243ef2243c51a43",
+      "first_execution": 175,
+      "occurrences": 48
+    }
+  ],
+  "claims": {
+    "kernel_crashes": "NOT_CLAIMED",
+    "root_causes": "NOT_CLAIMED",
+    "exploitability": "NOT_ASSESSED"
+  }
+}
