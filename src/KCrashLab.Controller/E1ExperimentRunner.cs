@@ -6,16 +6,16 @@ namespace KCrashLab.Controller;
 public static class E1ExperimentRunner
 {
     public const string KeepAllUniform = "KEEP_ALL_UNIFORM_V2";
-    public const string KeepAllEnergy = "KEEP_ALL_ENERGY_V2";
+    public const string KeepAllEnergyRanked = "KEEP_ALL_ENERGY_RANKED_V2";
     public const string NoveltyUniform = "NOVELTY_ONLY_UNIFORM_V2";
-    public const string NoveltyEnergy = "NOVELTY_ONLY_ENERGY_V2";
+    public const string NoveltyEnergyRanked = "NOVELTY_ONLY_ENERGY_RANKED_V2";
 
     public static IReadOnlySet<string> Strategies { get; } = new HashSet<string>(StringComparer.Ordinal)
     {
         KeepAllUniform,
-        KeepAllEnergy,
+        KeepAllEnergyRanked,
         NoveltyUniform,
-        NoveltyEnergy
+        NoveltyEnergyRanked
     };
 
     public static async Task<E1ExperimentResult> RunAsync(
@@ -39,9 +39,9 @@ public static class E1ExperimentRunner
         var policySets = new[]
         {
             FuzzPolicySet.KeepAllUniform(),
-            FuzzPolicySet.KeepAllEnergy(),
+            FuzzPolicySet.KeepAllEnergyRanked(),
             FuzzPolicySet.NoveltyUniform(),
-            FuzzPolicySet.NoveltyEnergy()
+            FuzzPolicySet.NoveltyEnergyRanked()
         };
         var results = new List<E1TrialResult>(trialsPerStrategy * policySets.Length);
         for (var trial = 1; trial <= trialsPerStrategy; trial++)
@@ -134,9 +134,9 @@ public static class E1ExperimentRunner
         return new[]
         {
             BuildContrast("ADMISSION_AT_UNIFORM_PARENT", NoveltyUniform, KeepAllUniform, trials),
-            BuildContrast("ADMISSION_AT_ENERGY_PARENT", NoveltyEnergy, KeepAllEnergy, trials),
-            BuildContrast("PARENT_AT_KEEP_ALL_ADMISSION", KeepAllEnergy, KeepAllUniform, trials),
-            BuildContrast("PARENT_AT_NOVELTY_ADMISSION", NoveltyEnergy, NoveltyUniform, trials)
+            BuildContrast("ADMISSION_AT_ENERGY_RANKED_PARENT", NoveltyEnergyRanked, KeepAllEnergyRanked, trials),
+            BuildContrast("PARENT_AT_KEEP_ALL_ADMISSION", KeepAllEnergyRanked, KeepAllUniform, trials),
+            BuildContrast("PARENT_AT_NOVELTY_ADMISSION", NoveltyEnergyRanked, NoveltyUniform, trials)
         };
     }
 

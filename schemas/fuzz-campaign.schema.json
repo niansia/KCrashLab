@@ -35,9 +35,9 @@
     "strategy": {
       "enum": [
         "KEEP_ALL_UNIFORM_V2",
-        "KEEP_ALL_ENERGY_V2",
+        "KEEP_ALL_ENERGY_RANKED_V2",
         "NOVELTY_ONLY_UNIFORM_V2",
-        "NOVELTY_ONLY_ENERGY_V2"
+        "NOVELTY_ONLY_ENERGY_RANKED_V2"
       ]
     },
     "campaign_seed": {
@@ -211,7 +211,7 @@
           "const": 1
         },
         "engine_version": {
-          "const": "1.3.0-sim"
+          "const": "1.4.0-sim"
         },
         "source_commit_time_utc": {
           "anyOf": [

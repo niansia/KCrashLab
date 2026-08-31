@@ -2,8 +2,31 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://kcrashlab.dev/schemas/case.schema.json",
   "title": "KCrashLab case IR",
+  "$defs": {
+    "scalar": {
+      "type": ["string", "integer", "boolean", "null"],
+      "maxLength": 65536,
+      "minimum": -9223372036854775808,
+      "maximum": 18446744073709551615
+    },
+    "value_0": { "$ref": "#/$defs/scalar" },
+    "value_1": { "anyOf": [{ "$ref": "#/$defs/scalar" }, { "type": "array", "items": { "$ref": "#/$defs/value_0" } }, { "type": "object", "propertyNames": { "maxLength": 128 }, "additionalProperties": { "$ref": "#/$defs/value_0" } }] },
+    "value_2": { "anyOf": [{ "$ref": "#/$defs/scalar" }, { "type": "array", "items": { "$ref": "#/$defs/value_1" } }, { "type": "object", "propertyNames": { "maxLength": 128 }, "additionalProperties": { "$ref": "#/$defs/value_1" } }] },
+    "value_3": { "anyOf": [{ "$ref": "#/$defs/scalar" }, { "type": "array", "items": { "$ref": "#/$defs/value_2" } }, { "type": "object", "propertyNames": { "maxLength": 128 }, "additionalProperties": { "$ref": "#/$defs/value_2" } }] },
+    "value_4": { "anyOf": [{ "$ref": "#/$defs/scalar" }, { "type": "array", "items": { "$ref": "#/$defs/value_3" } }, { "type": "object", "propertyNames": { "maxLength": 128 }, "additionalProperties": { "$ref": "#/$defs/value_3" } }] },
+    "value_5": { "anyOf": [{ "$ref": "#/$defs/scalar" }, { "type": "array", "items": { "$ref": "#/$defs/value_4" } }, { "type": "object", "propertyNames": { "maxLength": 128 }, "additionalProperties": { "$ref": "#/$defs/value_4" } }] },
+    "value_6": { "anyOf": [{ "$ref": "#/$defs/scalar" }, { "type": "array", "items": { "$ref": "#/$defs/value_5" } }, { "type": "object", "propertyNames": { "maxLength": 128 }, "additionalProperties": { "$ref": "#/$defs/value_5" } }] },
+    "value_7": { "anyOf": [{ "$ref": "#/$defs/scalar" }, { "type": "array", "items": { "$ref": "#/$defs/value_6" } }, { "type": "object", "propertyNames": { "maxLength": 128 }, "additionalProperties": { "$ref": "#/$defs/value_6" } }] },
+    "value_8": { "anyOf": [{ "$ref": "#/$defs/scalar" }, { "type": "array", "items": { "$ref": "#/$defs/value_7" } }, { "type": "object", "propertyNames": { "maxLength": 128 }, "additionalProperties": { "$ref": "#/$defs/value_7" } }] },
+    "value_9": { "anyOf": [{ "$ref": "#/$defs/scalar" }, { "type": "array", "items": { "$ref": "#/$defs/value_8" } }, { "type": "object", "propertyNames": { "maxLength": 128 }, "additionalProperties": { "$ref": "#/$defs/value_8" } }] },
+    "value_10": { "anyOf": [{ "$ref": "#/$defs/scalar" }, { "type": "array", "items": { "$ref": "#/$defs/value_9" } }, { "type": "object", "propertyNames": { "maxLength": 128 }, "additionalProperties": { "$ref": "#/$defs/value_9" } }] },
+    "value_11": { "anyOf": [{ "$ref": "#/$defs/scalar" }, { "type": "array", "items": { "$ref": "#/$defs/value_10" } }, { "type": "object", "propertyNames": { "maxLength": 128 }, "additionalProperties": { "$ref": "#/$defs/value_10" } }] },
+    "value_12": { "anyOf": [{ "$ref": "#/$defs/scalar" }, { "type": "array", "items": { "$ref": "#/$defs/value_11" } }, { "type": "object", "propertyNames": { "maxLength": 128 }, "additionalProperties": { "$ref": "#/$defs/value_11" } }] },
+    "value_13": { "anyOf": [{ "$ref": "#/$defs/scalar" }, { "type": "array", "items": { "$ref": "#/$defs/value_12" } }, { "type": "object", "propertyNames": { "maxLength": 128 }, "additionalProperties": { "$ref": "#/$defs/value_12" } }] }
+  },
   "type": "object",
   "required": ["schema_version", "target", "seed", "operations"],
+  "propertyNames": { "maxLength": 128 },
   "properties": {
     "schema_version": { "const": 1 },
     "target": { "type": "string", "pattern": "^kcl\\.(bounds|integer|race|state|lifetime|kmdf)$", "maxLength": 64 },
@@ -12,9 +35,15 @@
     "mutation": {
       "type": ["object", "null"],
       "required": ["operator_id", "parameters"],
+      "propertyNames": { "maxLength": 128 },
       "properties": {
         "operator_id": { "type": "string", "maxLength": 64 },
-        "parameters": { "type": "object", "maxProperties": 32 }
+        "parameters": {
+          "type": "object",
+          "maxProperties": 32,
+          "propertyNames": { "maxLength": 128 },
+          "additionalProperties": { "$ref": "#/$defs/value_13" }
+        }
       },
       "additionalProperties": false
     },
@@ -24,16 +53,23 @@
       "items": {
         "type": "object",
         "required": ["ioctl"],
+        "propertyNames": { "maxLength": 128 },
         "properties": {
           "ioctl": { "enum": ["ECHO", "RESET_STATE", "SET_MODE", "SUBMIT_RECORD", "QUERY_STATS", "TRIGGER_ASYNC"] },
           "input": { "type": "string", "maxLength": 65536 },
-          "fields": { "type": "object", "maxProperties": 32 }
+          "fields": {
+            "type": "object",
+            "maxProperties": 32,
+            "propertyNames": { "maxLength": 128 },
+            "additionalProperties": { "$ref": "#/$defs/value_12" }
+          }
         },
         "additionalProperties": false
       }
     },
     "schedule": {
       "type": "object",
+      "propertyNames": { "maxLength": 128 },
       "properties": {
         "workers": { "type": "integer", "minimum": 1, "maximum": 16 },
         "delays_us": { "type": "array", "maxItems": 64, "items": { "type": "integer", "minimum": 0, "maximum": 10000000 } }

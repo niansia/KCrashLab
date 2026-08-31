@@ -406,9 +406,9 @@ public static class E1ExperimentArtifacts
         var colors = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             [E1ExperimentRunner.KeepAllUniform] = "#c25b30",
-            [E1ExperimentRunner.KeepAllEnergy] = "#8c4f9e",
+            [E1ExperimentRunner.KeepAllEnergyRanked] = "#8c4f9e",
             [E1ExperimentRunner.NoveltyUniform] = "#2878b5",
-            [E1ExperimentRunner.NoveltyEnergy] = "#116466"
+            [E1ExperimentRunner.NoveltyEnergyRanked] = "#116466"
         };
         var paths = new StringBuilder();
         foreach (var group in result.SurvivalCurve.GroupBy(static point => point.Strategy, StringComparer.Ordinal))

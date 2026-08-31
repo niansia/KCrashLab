@@ -25,8 +25,8 @@ Updated: 2026-08-31
 - Paired E2 stateful-versus-single-call experiment with sequence length as the only changed variable.
 - Versioned experiment provenance: distinct source-commit/artifact time semantics, deterministic timestamp policy, Git state, source-tree digest, definition digest, Case IR version, and engine version.
 - Fuzz termination telemetry distinguishes budget completion from scheduler-limit termination and records duplicate/empty scheduling work.
-- Case Schema/runtime parity tests cover lineage hashes, mutation/field property limits, and the complete checked-in sample operation allowlist.
-- Exact .NET SDK pinning plus Windows 2022 and Ubuntu 24.04 simulation CI lanes.
+- Draft 2020-12 Case Schema/runtime parity tests execute a real schema validator over checked-in cases, randomized property order, and generated valid/invalid boundaries for depth, integers, strings, lineage, fields, mutation metadata, operations, and schedules. The byte-size envelope is tested separately as a runtime transport precondition.
+- Exact .NET SDK pinning, locked NuGet dependency graphs, immutable Action revisions, and Windows 2022 plus Ubuntu 24.04 simulation CI lanes.
 - Fault injection for ambiguous journal commits, duplicate/colliding events, CAS interruption/corruption, manifest loss/truncation, and invalid virtual-clock jumps.
 - Fail-closed clean reviewer packaging using `git archive`, ZIP inspection, and separate recorded-results packaging.
 - Safe CI that builds and tests simulation only; dependency audit treats NuGet advisories as errors.

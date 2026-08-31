@@ -10,10 +10,15 @@ namespace KCrashLab.Controller;
 
 public static class ExperimentProvenanceBuilder
 {
-    public const string EngineVersion = "1.3.0-sim";
+    public const string EngineVersion = "1.4.0-sim";
     public const string Unspecified = "UNSPECIFIED";
     public const string Uncommitted = "UNCOMMITTED";
     public const string SourceCommitTime = "SOURCE_COMMIT_TIME";
+
+    private const string DecisionStream = "SHA256_LANES_V1";
+    private const string TerminationRule = "BUDGET_OR_SCHEDULER_LIMIT_V1";
+    private const string EnergyRankingRule = "GREEDY_ENERGY_DIV_SELECTIONS_PLUS_ONE_THEN_LAST_SELECTED_THEN_CASE_ID_V1";
+    private const string PairedSeedRule = "BASE_PLUS_TRIAL_MINUS_ONE_V1";
 
     private static readonly string[] SourceDirectories =
     [
@@ -108,21 +113,15 @@ public static class ExperimentProvenanceBuilder
         int budget,
         string seedCaseId,
         int caseSchemaVersion) =>
-        DefinitionDigest(new
-        {
-            experiment = "G3_FUZZ_DISCOVERY_V1",
-            execution_mode = executionMode,
+        DefinitionDigest(FuzzDefinitionCore(
+            executionMode,
             strategy,
-            campaign_seed = campaignSeed,
+            campaignSeed,
             budget,
-            seed_case_id = seedCaseId,
-            mutation_operators = DefaultMutationOperators.Create().Select(static item => item.OperatorId).ToArray(),
-            candidate_enumeration = MutationCandidateSampling.AlgorithmId,
-            maximum_candidates_per_operator = 64,
-            termination_rule = "BUDGET_OR_SCHEDULER_LIMIT_V1",
-            case_schema_version = caseSchemaVersion,
-            engine_version = EngineVersion
-        });
+            seedCaseId,
+            MutationCandidateSampling.AlgorithmId,
+            MutationCandidateSampling.DefaultMaximumCandidatesPerOperator,
+            caseSchemaVersion));
 
     public static string E1DefinitionDigest(
         string experiment,
@@ -132,17 +131,14 @@ public static class ExperimentProvenanceBuilder
         int trialsPerStrategy,
         long baseCampaignSeed,
         int caseSchemaVersion) =>
-        DefinitionDigest(new
-        {
+        DefinitionDigest(E1DefinitionCore(
             experiment,
-            execution_mode = executionMode,
-            seed_case_id = seedCaseId,
-            budget_per_trial = budgetPerTrial,
-            trials_per_strategy = trialsPerStrategy,
-            base_campaign_seed = baseCampaignSeed,
-            case_schema_version = caseSchemaVersion,
-            engine_version = EngineVersion
-        });
+            executionMode,
+            seedCaseId,
+            budgetPerTrial,
+            trialsPerStrategy,
+            baseCampaignSeed,
+            caseSchemaVersion));
 
     public static string E2DefinitionDigest(
         string experiment,
@@ -154,19 +150,16 @@ public static class ExperimentProvenanceBuilder
         int singleCallMaximumSequenceLength,
         int statefulMaximumSequenceLength,
         int caseSchemaVersion) =>
-        DefinitionDigest(new
-        {
+        DefinitionDigest(E2DefinitionCore(
             experiment,
-            execution_mode = executionMode,
-            seed_case_id = seedCaseId,
-            budget_per_trial = budgetPerTrial,
-            trials_per_mode = trialsPerMode,
-            base_campaign_seed = baseCampaignSeed,
-            single_call_maximum_sequence_length = singleCallMaximumSequenceLength,
-            stateful_maximum_sequence_length = statefulMaximumSequenceLength,
-            case_schema_version = caseSchemaVersion,
-            engine_version = EngineVersion
-        });
+            executionMode,
+            seedCaseId,
+            budgetPerTrial,
+            trialsPerMode,
+            baseCampaignSeed,
+            singleCallMaximumSequenceLength,
+            statefulMaximumSequenceLength,
+            caseSchemaVersion));
 
     public static ExperimentProvenance ParseAndValidate(JsonElement element)
     {
@@ -312,47 +305,138 @@ public static class ExperimentProvenanceBuilder
     private static string DefinitionDigest(object definition) =>
         Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(definition, ContractJson.Compact))).ToLowerInvariant();
 
-    private static object FuzzDefinition(FuzzCampaignResult result) => new
-    {
-        experiment = "G3_FUZZ_DISCOVERY_V1",
-        execution_mode = result.ExecutionMode,
-        strategy = result.Strategy,
-        campaign_seed = result.CampaignSeed,
-            budget = result.Budget,
-            seed_case_id = result.SeedCaseId,
-            mutation_operators = DefaultMutationOperators.Create().Select(static item => item.OperatorId).ToArray(),
-            candidate_enumeration = result.CandidateEnumeration,
-            maximum_candidates_per_operator = result.MaximumCandidatesPerOperator,
-            termination_rule = "BUDGET_OR_SCHEDULER_LIMIT_V1",
-            case_schema_version = result.Corpus[0].TestCase.Value.SchemaVersion,
-        engine_version = EngineVersion
-    };
+    private static object FuzzDefinition(FuzzCampaignResult result) => FuzzDefinitionCore(
+        result.ExecutionMode,
+        result.Strategy,
+        result.CampaignSeed,
+        result.Budget,
+        result.SeedCaseId,
+        result.CandidateEnumeration,
+        result.MaximumCandidatesPerOperator,
+        result.Corpus[0].TestCase.Value.SchemaVersion);
 
-    private static object E1Definition(E1ExperimentResult result) => new
-    {
-        experiment = result.Experiment,
-        execution_mode = result.ExecutionMode,
-        seed_case_id = result.SeedCaseId,
-        budget_per_trial = result.BudgetPerTrial,
-        trials_per_strategy = result.TrialsPerStrategy,
-        base_campaign_seed = result.BaseCampaignSeed,
-        case_schema_version = 1,
-        engine_version = EngineVersion
-    };
+    private static object E1Definition(E1ExperimentResult result) => E1DefinitionCore(
+        result.Experiment,
+        result.ExecutionMode,
+        result.SeedCaseId,
+        result.BudgetPerTrial,
+        result.TrialsPerStrategy,
+        result.BaseCampaignSeed,
+        caseSchemaVersion: 1);
 
-    private static object E2Definition(E2ExperimentResult result) => new
-    {
-        experiment = result.Experiment,
-        execution_mode = result.ExecutionMode,
-        seed_case_id = result.SeedCaseId,
-        budget_per_trial = result.BudgetPerTrial,
-        trials_per_mode = result.TrialsPerMode,
-        base_campaign_seed = result.BaseCampaignSeed,
-        single_call_maximum_sequence_length = result.SingleCallMaximumSequenceLength,
-        stateful_maximum_sequence_length = result.StatefulMaximumSequenceLength,
-        case_schema_version = 1,
-        engine_version = EngineVersion
-    };
+    private static object E2Definition(E2ExperimentResult result) => E2DefinitionCore(
+        result.Experiment,
+        result.ExecutionMode,
+        result.SeedCaseId,
+        result.BudgetPerTrial,
+        result.TrialsPerMode,
+        result.BaseCampaignSeed,
+        result.SingleCallMaximumSequenceLength,
+        result.StatefulMaximumSequenceLength,
+        caseSchemaVersion: 1);
+
+    private static object FuzzDefinitionCore(
+        string executionMode,
+        string strategy,
+        long campaignSeed,
+        int budget,
+        string seedCaseId,
+        string candidateEnumeration,
+        int maximumCandidatesPerOperator,
+        int caseSchemaVersion) => new
+        {
+            experiment = "G3_FUZZ_DISCOVERY_V1",
+            execution_mode = executionMode,
+            strategy,
+            campaign_seed = campaignSeed,
+            budget,
+            seed_case_id = seedCaseId,
+            mutation_operators = MutationOperatorIds(),
+            candidate_enumeration = candidateEnumeration,
+            maximum_candidates_per_operator = maximumCandidatesPerOperator,
+            decision_stream = DecisionStream,
+            termination_rule = TerminationRule,
+            case_schema_version = caseSchemaVersion,
+            engine_version = EngineVersion
+        };
+
+    private static object E1DefinitionCore(
+        string experiment,
+        string executionMode,
+        string seedCaseId,
+        int budgetPerTrial,
+        int trialsPerStrategy,
+        long baseCampaignSeed,
+        int caseSchemaVersion) => new
+        {
+            experiment,
+            execution_mode = executionMode,
+            target = "kcl.state",
+            seed_case_id = seedCaseId,
+            budget_per_trial = budgetPerTrial,
+            trials_per_strategy = trialsPerStrategy,
+            base_campaign_seed = baseCampaignSeed,
+            corpus_admission_policies = new[] { "KEEP_ALL", "NOVELTY_ONLY" },
+            parent_selection_policies = new[] { "UNIFORM", "ENERGY_RANKED_V1" },
+            operator_selection_policy = "UNIFORM",
+            candidate_selection_policy = "UNIFORM",
+            energy_ranking_rule = EnergyRankingRule,
+            strategy_ids = new[]
+            {
+                E1ExperimentRunner.KeepAllUniform,
+                E1ExperimentRunner.KeepAllEnergyRanked,
+                E1ExperimentRunner.NoveltyUniform,
+                E1ExperimentRunner.NoveltyEnergyRanked
+            },
+            mutation_operators = MutationOperatorIds(),
+            candidate_enumeration = MutationCandidateSampling.AlgorithmId,
+            maximum_candidates_per_operator = MutationCandidateSampling.DefaultMaximumCandidatesPerOperator,
+            decision_stream = DecisionStream,
+            paired_seed_rule = PairedSeedRule,
+            termination_rule = TerminationRule,
+            case_schema_version = caseSchemaVersion,
+            engine_version = EngineVersion
+        };
+
+    private static object E2DefinitionCore(
+        string experiment,
+        string executionMode,
+        string seedCaseId,
+        int budgetPerTrial,
+        int trialsPerMode,
+        long baseCampaignSeed,
+        int singleCallMaximumSequenceLength,
+        int statefulMaximumSequenceLength,
+        int caseSchemaVersion) => new
+        {
+            experiment,
+            execution_mode = executionMode,
+            target = "kcl.state",
+            seed_case_id = seedCaseId,
+            budget_per_trial = budgetPerTrial,
+            trials_per_mode = trialsPerMode,
+            base_campaign_seed = baseCampaignSeed,
+            modes = new[] { "SINGLE_CALL", "STATEFUL" },
+            single_call_maximum_sequence_length = singleCallMaximumSequenceLength,
+            stateful_maximum_sequence_length = statefulMaximumSequenceLength,
+            corpus_admission_policy = "NOVELTY_ONLY",
+            parent_selection_policy = "ENERGY_RANKED_V1",
+            operator_selection_policy = "UNIFORM",
+            candidate_selection_policy = "UNIFORM",
+            energy_ranking_rule = EnergyRankingRule,
+            mutation_operators = MutationOperatorIds(),
+            candidate_enumeration = MutationCandidateSampling.AlgorithmId,
+            maximum_candidates_per_operator = MutationCandidateSampling.DefaultMaximumCandidatesPerOperator,
+            decision_stream = DecisionStream,
+            sequence_cap_rule = "REJECT_CANDIDATE_ABOVE_MODE_MAXIMUM_V1",
+            paired_seed_rule = PairedSeedRule,
+            termination_rule = TerminationRule,
+            case_schema_version = caseSchemaVersion,
+            engine_version = EngineVersion
+        };
+
+    private static string[] MutationOperatorIds() =>
+        DefaultMutationOperators.Create().Select(static item => item.OperatorId).ToArray();
 
     private static void ValidateRecordedAt(string value)
     {

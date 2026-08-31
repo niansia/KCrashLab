@@ -12,7 +12,7 @@ E1 v2 is a 2×2 policy ablation. It crosses keep-all versus novelty-only corpus 
 
 - Safe seed: `samples/cases/state-safe-seed.case.json`.
 - Target: deterministic user-mode `kcl.state` model.
-- Strategies: `KEEP_ALL_UNIFORM_V2`, `KEEP_ALL_ENERGY_V2`, `NOVELTY_ONLY_UNIFORM_V2`, and `NOVELTY_ONLY_ENERGY_V2`.
+- Strategies: `KEEP_ALL_UNIFORM_V2`, `KEEP_ALL_ENERGY_RANKED_V2`, `NOVELTY_ONLY_UNIFORM_V2`, and `NOVELTY_ONLY_ENERGY_RANKED_V2`.
 - Budget: 256 executions per arm and trial.
 - Trials: 20 paired campaign seeds from 20260831 through 20260850.
 - Outcome: first exact matching signature; no finding at execution 256 is right-censored.
@@ -39,6 +39,6 @@ The v2 report includes `1 − Kaplan–Meier survival` for every arm and paired 
 
 ## Reproducibility correction made during the study
 
-An initial dry run revealed that the novelty engine recorded campaign seeds without using them to change scheduling, so its nominal trials repeated one path. That result was rejected. The final engine uses an explicit SplitMix64 schedule to rotate operator and candidate order; same-seed execution logs remain identical, while different seeds are contract-tested to produce different orders.
+An initial dry run revealed that the novelty engine recorded campaign seeds without using them to change scheduling, so its nominal trials repeated one path. That result was rejected. Parent, operator, and candidate policy decisions now use independent SHA-256-derived decision lanes keyed by campaign seed and scheduling iteration. Mutation candidate caps use a separate seed-keyed `HASH_RANKED_V1` ranking over the complete valid candidate set. Same-seed execution logs remain identical, while different seeds are contract-tested to produce different orders.
 
 The v2 artifact's `raw.csv` preserves all 80 trial outcomes, including every censored trial; `survival.csv` and `contrasts.csv` are deterministically derived and cross-checked by the verifier. Re-running the exact command must produce a byte-identical manifest before the record is accepted.

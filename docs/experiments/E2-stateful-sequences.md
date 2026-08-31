@@ -38,4 +38,4 @@ dotnet run --project src/KCrashLab.Cli --configuration Release -- experiment ver
 
 Paired outcomes: 20 stateful-only, 0 single-call-only, 0 both, and 0 neither.
 
-The result demonstrates expressiveness against this specific synthetic prerequisite chain. It does not establish real-driver effectiveness, statistical significance, or kernel crash discovery. Single-call runs may stop below the nominal budget when their finite valid search space is exhausted; the raw artifact preserves actual execution counts rather than pretending idle scheduler polls are executions.
+The result demonstrates expressiveness against this specific synthetic prerequisite chain. It does not establish real-driver effectiveness, statistical significance, or kernel crash discovery. Single-call runs may stop below the nominal budget after reaching the scheduler-iteration limit with repeated empty or duplicate selections; this does not prove global search-space exhaustion. The raw artifact preserves actual execution counts rather than treating idle scheduler polls as executions.

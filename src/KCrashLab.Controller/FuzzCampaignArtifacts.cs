@@ -188,7 +188,7 @@ public static class FuzzCampaignArtifacts
                 errors.Add("summary.json does not declare SIMULATED execution mode.");
             }
 
-            if (summaryRoot.GetProperty("strategy").GetString() is not ("KEEP_ALL_UNIFORM_V2" or "KEEP_ALL_ENERGY_V2" or "NOVELTY_ONLY_UNIFORM_V2" or "NOVELTY_ONLY_ENERGY_V2"))
+            if (summaryRoot.GetProperty("strategy").GetString() is not ("KEEP_ALL_UNIFORM_V2" or "KEEP_ALL_ENERGY_RANKED_V2" or "NOVELTY_ONLY_UNIFORM_V2" or "NOVELTY_ONLY_ENERGY_RANKED_V2"))
             {
                 errors.Add("summary.json has an unsupported fuzzing strategy.");
             }

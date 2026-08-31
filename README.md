@@ -64,7 +64,7 @@ Inputs are normalized into a versioned JSON representation. Semantic identity is
 
 Parent, operator, and candidate decisions use independent seed-derived decision lanes. Candidate caps use `HASH_RANKED_V1`: the complete valid candidate set is ranked from the campaign seed, operator identifier, and semantic case identifier before truncation. This avoids favoring whichever fields happen to be enumerated first.
 
-Campaign summaries expose the termination reason, scheduling iterations and limit, duplicate-candidate skips, empty polls, candidate-selection rule, and per-operator cap. A scheduler-exhausted run cannot be silently reported as a fully consumed execution budget.
+Campaign summaries expose the termination reason, scheduling iterations and limit, duplicate-candidate skips, empty polls, candidate-selection rule, and per-operator cap. A scheduler-limited run cannot be silently reported as a fully consumed execution budget or proof of global search-space exhaustion.
 
 ### Exact failure identity
 
