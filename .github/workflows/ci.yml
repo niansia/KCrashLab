@@ -63,7 +63,7 @@ jobs:
         shell: pwsh
         run: ./scripts/package.ps1 -OutputPath artifacts/KCrashLab-source.zip
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: simulation-test-results
