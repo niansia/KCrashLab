@@ -1,0 +1,43 @@
+[Version]
+Signature="$WINDOWS NT$"
+Class=System
+ClassGuid={4D36E97D-E325-11CE-BFC1-08002BE10318}
+Provider=%ProviderName%
+DriverVer=08/31/2026,0.2.0.0
+CatalogFile=KCrashLabTarget.cat
+PnpLockdown=1
+
+[DestinationDirs]
+DefaultDestDir=12
+
+[Manufacturer]
+%ProviderName%=Standard,NTamd64
+
+[Standard.NTamd64]
+%DeviceName%=KclInstall,Root\KCrashLabTarget
+
+[KclInstall.NT]
+CopyFiles=DriverCopyFiles
+
+[DriverCopyFiles]
+KCrashLabTarget.sys
+
+[KclInstall.NT.Services]
+AddService=KCrashLabTarget,0x00000002,KclService
+
+[KclService]
+DisplayName=%DeviceName%
+ServiceType=1
+StartType=3
+ErrorControl=1
+ServiceBinary=%12%\KCrashLabTarget.sys
+
+[KclInstall.NT.Wdf]
+KmdfService=KCrashLabTarget,KclWdf
+
+[KclWdf]
+KmdfLibraryVersion=1.33
+
+[Strings]
+ProviderName="KCrashLab contributors"
+DeviceName="KCrashLab repository-owned synthetic target"

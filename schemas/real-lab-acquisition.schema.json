@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kcrashlab.local/schemas/real-lab-acquisition.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "execution_mode", "original_case_path", "minimized_case_path", "driver_sha256", "vm_identity_sha256", "checkpoint_identity_sha256", "authorization_sha256", "guest_build", "symbols_sha256", "dump_sha256", "raw_windbg_sha256", "discovery_journal_sha256", "discovery_watchdog_sha256", "raw_windbg_path", "replays", "recorded_at_utc", "git_commit"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "execution_mode": { "const": "REAL_LAB" },
+    "original_case_path": { "type": "string", "minLength": 1 },
+    "minimized_case_path": { "type": "string", "minLength": 1 },
+    "driver_sha256": { "$ref": "#/$defs/sha256" },
+    "vm_identity_sha256": { "$ref": "#/$defs/sha256" },
+    "checkpoint_identity_sha256": { "$ref": "#/$defs/sha256" },
+    "authorization_sha256": { "$ref": "#/$defs/sha256" },
+    "guest_build": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "symbols_sha256": { "$ref": "#/$defs/sha256" },
+    "dump_sha256": { "$ref": "#/$defs/sha256" },
+    "raw_windbg_sha256": { "$ref": "#/$defs/sha256" },
+    "discovery_journal_sha256": { "$ref": "#/$defs/sha256" },
+    "discovery_watchdog_sha256": { "$ref": "#/$defs/sha256" },
+    "raw_windbg_path": { "type": "string", "minLength": 1 },
+    "replays": {
+      "type": "array", "minItems": 3, "maxItems": 3,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["attempt", "classification", "signature", "dump_sha256", "journal_sha256", "watchdog_sha256"],
+        "properties": {
+          "attempt": { "type": "integer", "minimum": 1, "maximum": 3 },
+          "classification": { "const": "MATCH" },
+          "signature": { "$ref": "#/$defs/sha256" },
+          "dump_sha256": { "$ref": "#/$defs/sha256" },
+          "journal_sha256": { "$ref": "#/$defs/sha256" },
+          "watchdog_sha256": { "$ref": "#/$defs/sha256" }
+        }
+      }
+    },
+    "recorded_at_utc": { "type": "string", "format": "date-time" },
+    "git_commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+  },
+  "$defs": { "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" } }
+}

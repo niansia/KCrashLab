@@ -1,10 +1,33 @@
+using System.Globalization;
 using System.Text;
+using KCrashLab.Contracts;
 using KCrashLab.Domain;
 
 namespace KCrashLab.Tests;
 
 public sealed class MutationOperatorTests
 {
+    [Fact]
+    public void CandidateCapUsesSeededHashRankingInsteadOfEnumerationPrefix()
+    {
+        var candidates = Enumerable.Range(0, 128)
+            .Select(index => new CanonicalCase(
+                new TestCase(1, "kcl.state", index, [], null, null, null),
+                index.ToString("x64", CultureInfo.InvariantCulture),
+                []))
+            .ToArray();
+
+        var first = MutationCandidateSampling.Select(candidates, new MutationContext(7, 64), "test.operator").ToArray();
+        var repeated = MutationCandidateSampling.Select(candidates, new MutationContext(7, 64), "test.operator").ToArray();
+        var otherSeed = MutationCandidateSampling.Select(candidates, new MutationContext(8, 64), "test.operator").ToArray();
+
+        Assert.Equal(first.Select(static item => item.CaseId), repeated.Select(static item => item.CaseId));
+        Assert.NotEqual(first.Select(static item => item.CaseId), otherSeed.Select(static item => item.CaseId));
+        Assert.Contains(first, static item => Convert.ToInt32(item.CaseId[^8..], 16) >= 64);
+        Assert.False(first.Select(static item => item.CaseId)
+            .SequenceEqual(candidates.Take(64).Select(static item => item.CaseId), StringComparer.Ordinal));
+    }
+
     [Fact]
     public async Task EveryDefaultMutationPreservesSchemaAndRecordsLineage()
     {
@@ -41,4 +64,3 @@ public sealed class MutationOperatorTests
         Assert.NotEqual(seed.CanonicalUtf8, withLineage.CanonicalUtf8);
     }
 }
-

@@ -13,12 +13,12 @@ public static class CaseCanonicalizer
 
     private static readonly HashSet<string> AllowedTargets =
     [
-        "kcl.bounds", "kcl.integer", "kcl.race", "kcl.state", "kcl.lifetime"
+        "kcl.bounds", "kcl.integer", "kcl.race", "kcl.state", "kcl.lifetime", "kcl.kmdf"
     ];
 
     private static readonly HashSet<string> AllowedOperations =
     [
-        "RESET_STATE", "SET_MODE", "SUBMIT_RECORD", "QUERY_STATS", "TRIGGER_ASYNC"
+        "ECHO", "RESET_STATE", "SET_MODE", "SUBMIT_RECORD", "QUERY_STATS", "TRIGGER_ASYNC"
     ];
 
     public static CanonicalCase Parse(string json)
@@ -94,6 +94,28 @@ public static class CaseCanonicalizer
             if (operation.Input is { Length: > MaximumStringLength })
             {
                 throw new InvalidDataException("Operation input is too large.");
+            }
+            if (operation.Fields is { Count: > 32 })
+            {
+                throw new InvalidDataException("Operation fields contains more than 32 properties.");
+            }
+        }
+
+        if (value.ParentCaseId is not null
+            && (value.ParentCaseId.Length != 64 || value.ParentCaseId.Any(static character => character is not (>= '0' and <= '9') and not (>= 'a' and <= 'f'))))
+        {
+            throw new InvalidDataException("parent_case_id must be a lowercase SHA-256 digest.");
+        }
+
+        if (value.Mutation is { } mutation)
+        {
+            if (mutation.OperatorId.Length > 64)
+            {
+                throw new InvalidDataException("mutation.operator_id exceeds 64 characters.");
+            }
+            if (mutation.Parameters.Count > 32)
+            {
+                throw new InvalidDataException("mutation.parameters contains more than 32 properties.");
             }
         }
 

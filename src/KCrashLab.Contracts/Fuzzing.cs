@@ -37,9 +37,15 @@ public sealed record FuzzCampaignResult(
     long CampaignSeed,
     int Budget,
     int Executions,
+    string TerminationReason,
+    int SchedulingIterations,
+    int SchedulingLimit,
+    int DuplicateCandidateSkips,
+    int EmptyCandidatePolls,
+    string CandidateEnumeration,
+    int MaximumCandidatesPerOperator,
     string SeedCaseId,
     IReadOnlyList<string> GlobalCoverage,
     IReadOnlyList<CorpusEntrySnapshot> Corpus,
     IReadOnlyList<FuzzFindingSnapshot> Findings,
     IReadOnlyList<FuzzExecutionRecord> ExecutionLog);
-

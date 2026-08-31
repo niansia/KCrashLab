@@ -198,6 +198,8 @@ public sealed class PolicyDrivenFuzzEngine(
         var executions = 1;
         var schedulingIteration = 0;
         var schedulingLimit = Math.Max(4_096, budget * operators.Count * 32);
+        var duplicateCandidateSkips = 0;
+        var emptyCandidatePolls = 0;
 
         while (executions < budget && schedulingIteration < schedulingLimit)
         {
@@ -211,11 +213,12 @@ public sealed class PolicyDrivenFuzzEngine(
                 operators,
                 new DeterministicDecisionContext(campaignSeed, schedulingIteration, "operator"));
             var mutationOperator = operators[operatorIndex];
-            var unseenCandidates = mutationOperator.Mutate(source, mutationContext)
-                .Where(candidate => !seenCases.Contains(candidate.CaseId))
-                .ToArray();
+            var sampledCandidates = mutationOperator.Mutate(source, mutationContext).ToArray();
+            var unseenCandidates = sampledCandidates.Where(candidate => !seenCases.Contains(candidate.CaseId)).ToArray();
+            duplicateCandidateSkips += sampledCandidates.Length - unseenCandidates.Length;
             if (unseenCandidates.Length == 0)
             {
+                emptyCandidatePolls++;
                 continue;
             }
 
@@ -243,6 +246,13 @@ public sealed class PolicyDrivenFuzzEngine(
             campaignSeed,
             budget,
             executions,
+            executions == budget ? "BUDGET_REACHED" : "SCHEDULER_ITERATION_LIMIT_REACHED",
+            schedulingIteration,
+            schedulingLimit,
+            duplicateCandidateSkips,
+            emptyCandidatePolls,
+            MutationCandidateSampling.AlgorithmId,
+            mutationContext.MaximumCandidatesPerOperator,
             seed.CaseId,
             corpus.GlobalCoverage.Order(StringComparer.Ordinal).ToArray(),
             corpus.Snapshot(),

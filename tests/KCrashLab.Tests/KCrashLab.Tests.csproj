@@ -15,8 +15,8 @@
     <ProjectReference Include="..\..\src\KCrashLab.Contracts\KCrashLab.Contracts.csproj" />
     <ProjectReference Include="..\..\src\KCrashLab.Controller\KCrashLab.Controller.csproj" />
     <ProjectReference Include="..\..\src\KCrashLab.Domain\KCrashLab.Domain.csproj" />
+    <ProjectReference Include="..\..\src\KCrashLab.GuestAgent\KCrashLab.GuestAgent.csproj" />
     <ProjectReference Include="..\..\src\KCrashLab.Simulation\KCrashLab.Simulation.csproj" />
     <ProjectReference Include="..\..\src\KCrashLab.Storage\KCrashLab.Storage.csproj" />
   </ItemGroup>
 </Project>
-

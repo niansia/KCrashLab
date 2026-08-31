@@ -11,3 +11,10 @@ Track B is blocked until all of the following are independently verified:
 
 Failure of any gate must produce `BLOCKED_BY_ENVIRONMENT`. A real backend must not fall back to the host, another VM, or an arbitrary device interface.
 
+## Track B execution controls
+
+Before each real-lab run, the controller must capture the verified VM and checkpoint identities, target device-interface GUID, repository-owned driver hash, guest build, dump destination, and an operator-supplied lab authorization record. A mismatch after restore aborts the run before dispatch.
+
+The host-side kill switch must remain available independently of the guest heartbeat. Loss of controller state, ambiguous VM identity, checkpoint mutation, evidence-root exhaustion, or repeated recovery failure stops the campaign; none of these conditions may be reclassified as a target crash.
+
+Real-lab evidence is private by default. Publication requires the [public evidence release checklist](publication-checklist.md), and a kernel dump must never be placed in a public evidence bundle merely to make the bundle self-contained.

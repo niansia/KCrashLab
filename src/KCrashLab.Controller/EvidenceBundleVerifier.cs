@@ -48,7 +48,7 @@ public sealed class EvidenceBundleVerifier
             }
         }
 
-        if (Directory.EnumerateFiles(bundleRoot, "*.dmp", SearchOption.AllDirectories).Any())
+        if (Directory.EnumerateFiles(bundleRoot, "*", SearchOption.AllDirectories).Any(static path => path.EndsWith(".dmp", StringComparison.OrdinalIgnoreCase)))
         {
             errors.Add("A simulation bundle must not contain a memory dump.");
         }

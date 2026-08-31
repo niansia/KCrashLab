@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kcrashlab.local/schemas/real-finding.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "execution_mode", "classification", "signature_version", "signature", "case_id", "minimized_case_id", "claims"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "execution_mode": { "const": "REAL_LAB" },
+    "classification": { "const": "CONFIRMED_SYNTHETIC_DRIVER_CRASH" },
+    "signature_version": { "const": 1 },
+    "signature": { "$ref": "#/$defs/sha256" },
+    "case_id": { "$ref": "#/$defs/sha256" },
+    "minimized_case_id": { "$ref": "#/$defs/sha256" },
+    "claims": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kernel_crash", "root_cause", "exploitability"],
+      "properties": {
+        "kernel_crash": { "const": "CONFIRMED_IN_ISOLATED_LAB" },
+        "root_cause": { "const": "SYNTHETIC_BUGCHECK_ORACLE" },
+        "exploitability": { "const": "NOT_ASSESSED" }
+      }
+    }
+  },
+  "$defs": { "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" } }
+}

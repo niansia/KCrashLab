@@ -19,6 +19,9 @@ internal static class TestPaths
     public static string Sample(params string[] parts) =>
         Path.Combine([RepositoryRoot, "samples", .. parts]);
 
+    public static string Fixture(params string[] parts) =>
+        Path.Combine([RepositoryRoot, "tests", "fixtures", .. parts]);
+
     public static string NewTemporaryDirectory()
     {
         var path = Path.Combine(Path.GetTempPath(), "KCrashLab.Tests", Guid.NewGuid().ToString("N"));
@@ -26,4 +29,3 @@ internal static class TestPaths
         return path;
     }
 }
-

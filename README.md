@@ -1,199 +1,218 @@
 # KCrashLab
 
-[![simulation-ci](https://github.com/niansia/KCrashLab/actions/workflows/ci.yml/badge.svg)](https://github.com/niansia/KCrashLab/actions/workflows/ci.yml)
+**An evidence-first research platform for deterministic, reproducible Windows driver reliability experiments.**
 
-**Research Preview v0.1 · Reproducible control-plane research for Windows kernel-driver fuzzing**
+[![Simulation CI](https://github.com/niansia/KCrashLab/actions/workflows/ci.yml/badge.svg)](https://github.com/niansia/KCrashLab/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-KCrashLab is a simulation-tested research prototype for the difficult parts around a kernel fuzzer: deterministic case identity, policy-controlled mutation, crash-signature grouping, resumable orchestration, trigger minimization, replay voting, evidence integrity, and failure recovery.
+KCrashLab studies the parts of low-level failure research that are easy to overlook: deterministic input generation, recovery after interruption, exact failure identity, trigger minimization, cold replay, provenance, and independently verifiable evidence.
 
-> **Current execution mode: SIMULATED.** This repository does not contain a vulnerable kernel driver, does not load a driver, and does not claim a real Windows kernel crash. Track B remains fail-closed until a disposable and recoverable Windows lab is available.
+The default workflow runs entirely in user mode against a synthetic state machine. A separately gated Windows-lab track exists for the repository-owned target, but it is never selected by ordinary campaign commands.
 
-## Research question
+> [!IMPORTANT]
+> **All evidence currently committed to this repository is simulated.** The presence of Windows-lab source code does not prove that a driver was loaded, a system failure occurred, a checkpoint was restored, or a real vulnerability was found. KCrashLab does not target third-party drivers and does not generate exploits.
 
-A useful fuzzing result is more than “the target stopped.” It must answer:
+## Project status
 
-- Can the campaign resume after an ambiguous failure without dispatching the same case twice?
-- Can two observations be grouped by an exact, versioned signature instead of a filename?
-- Can the trigger be minimized while preserving the same signature under replay?
-- Can a reviewer verify the artifact without trusting the machine that produced it?
-- Can scheduling policies be compared without silently changing the mutation engine at the same time?
+| Area | Status | What the status means |
+|---|:---:|---|
+| Deterministic simulation | ✅ | Implemented and exercised by repository tests and recorded synthetic artifacts |
+| Resumable campaign controller | ✅ | Append-only journal, recovery, terminal-state handling, and idempotent evidence production |
+| Case mutation and corpus scheduling | ✅ | Deterministic policies, stateful sequences, semantic feedback, and explicit scheduler telemetry |
+| Triage, replay, and minimization | ✅ | Exact signatures, replay voting, hierarchical reduction, and lineage-preserving cases |
+| Evidence verification | ✅ | Content hashes plus semantic consistency checks across summaries, cases, reports, and raw tables |
+| Controlled Windows-lab source | 🧪 | Gated implementation is present; no runtime result is committed |
+| Third-party target support | — | Intentionally out of scope |
 
-KCrashLab turns those questions into executable contracts and tamper-evident artifacts.
+`✅` means implemented in the public simulation path. `🧪` means source is available for review but runtime evidence is absent. `—` means intentionally unsupported.
+
+## Why this project exists
+
+Finding a failure is only the beginning. A credible research workflow must also answer:
+
+1. Can the exact input be identified independently of file formatting?
+2. Can an interrupted campaign resume without inventing or losing state?
+3. Can the same failure be reproduced from a clean baseline?
+4. Can the trigger be reduced while preserving its exact signature?
+5. Can another reviewer verify the result without trusting the producer?
+6. Are simulated observations clearly separated from real-machine observations?
+
+KCrashLab turns those questions into explicit contracts, tests, artifacts, and failure-closed gates.
+
+## System overview
 
 ```text
-safe Case IR
-    │
-    ├─ canonical identity + mutation lineage
-    ▼
-policy-driven fuzz engine ── semantic feedback ── corpus scheduler
-    │                                              │
-    └──────────── deterministic execution log ─────┘
-                           │
-                           ▼
-exact signature ── minimize ── replay vote ── evidence manifest
-                           │
-                           └─ offline semantic verification
+environment probe
+    → canonical Case IR
+    → deterministic mutation and scheduling
+    → semantic observation and corpus admission
+    → exact signature and finding deduplication
+    → minimization and replay voting
+    → evidence bundle and manifest
+    → offline structural + semantic verification
 ```
 
-## Capability matrix
+The controller communicates through `ILabBackend`. The simulation backend is the only backend available to ordinary campaigns. The Windows-lab path has a separate entry point, private profile, explicit confirmation boundary, fixed repository target, and clean-checkpoint replay policy.
 
-| Capability | Simulation track | Real kernel lab |
-|---|---|---|
-| Case IR v1, canonical JSON, SHA-256 case IDs | Implemented and tested | Reusable contract |
-| Boundary, payload, and stateful sequence mutations | Implemented | Harness integration pending |
-| 2×2 corpus-admission / parent-selection ablation | Implemented on one synthetic target | Not evaluated |
-| Append-only SQLite campaign journal and resume | Implemented with fault injection | Backend integration pending |
-| Versioned triage and exact signature grouping | Implemented with synthetic WinDbg-like input | Real dump parser pending |
-| Hierarchical minimization and replay voting | Implemented | VM checkpoint replay pending |
-| CAS, SHA-256 manifest, static report, semantic verifier | Implemented | Reusable contract |
-| Hyper-V lease/checkpoint lifecycle | Contract only; fails closed | Blocked by environment |
-| KMDF targets, IOCTL harness, Driver Verifier, dump capture | Not included | Not implemented |
-| Kernel coverage or real-driver performance claims | Not claimed | No evidence yet |
+## Technical highlights
 
-## Recorded evidence
+### Canonical Case IR
 
-Canonical reviewer-facing outputs live in [`results/recorded`](results/recorded). Every set contains a SHA-256 manifest and a semantic verifier; every summary binds the experiment definition, Case IR version, engine version, source-tree digest, recording time, and source commit.
+Inputs are normalized into a versioned JSON representation. Semantic identity is a SHA-256 digest of canonical content, while lineage metadata remains available for audit. Equivalent inputs therefore deduplicate even when they were reached through different mutation paths.
 
-### G3 — deterministic discovery mechanics
+### Deterministic scheduling
 
-One 256-execution `kcl.state` campaign using `NOVELTY_ONLY_ENERGY_V2`:
+Parent, operator, and candidate decisions use independent seed-derived decision lanes. Candidate caps use `HASH_RANKED_V1`: the complete valid candidate set is ranked from the campaign seed, operator identifier, and semantic case identifier before truncation. This avoids favoring whichever fields happen to be enumerated first.
 
-| Metric | Recorded value |
-|---|---:|
-| First exact signature | execution 175 |
-| Semantic feedback elements | 77 |
-| Retained corpus cases | 88 |
-| Raw synthetic failures | 48 |
-| Exact signatures | 1 |
+Campaign summaries expose the termination reason, scheduling iterations and limit, duplicate-candidate skips, empty polls, candidate-selection rule, and per-operator cap. A scheduler-exhausted run cannot be silently reported as a fully consumed execution budget.
 
-The 48 raw observations are not presented as 48 bugs. Exact-signature grouping reduces them to one known synthetic finding.
+### Exact failure identity
 
-### E1 — 2×2 policy ablation
+Findings are grouped by a versioned signature derived from normalized triage fields rather than by a generic failure label. Replay uses explicit voting, and minimization is accepted only while the target signature remains unchanged.
 
-All four arms use the same engine, safe seed, operators, candidate enumeration, per-trial budget, and deterministic decision-stream construction. Only corpus admission and parent selection are crossed:
+### Resumability and idempotence
 
-| Corpus admission | Parent selection | Discoveries / 20 | Censored |
-|---|---|---:|---:|
-| Keep all | Uniform | 5 | 15 |
-| Keep all | Energy | 14 | 6 |
-| Novelty only | Uniform | 16 | 4 |
-| Novelty only | Energy | 13 | 7 |
+Campaign transitions are recorded in an append-only SQLite journal. Restarting the controller reconstructs state and resumes the unfinished stage. Evidence publication is idempotent, so recovery does not create multiple authoritative bundles for one campaign.
 
-The result shows an interaction on this fixture: novelty admission helps under uniform parent selection, while the energy scheduler changes that relationship. It does **not** support a universal “novelty is better” or “energy is better” claim. Censored trials remain in the Kaplan–Meier analysis and raw paired outcomes.
+### Evidence beyond checksums
 
-### E2 — stateful expressiveness validation
+Every bundle includes a SHA-256 manifest, but verification does not stop there. KCrashLab also checks cross-file identities, summary bounds, trial counts, paired seeds, claims, canonical cases, CSV rows, reports, and provenance fields. A self-consistent hash over inconsistent research data is rejected.
 
-The target signature structurally requires a three-operation prerequisite chain. With a 512-execution budget across 20 paired seeds, the single-call cap found 0/20 and the stateful cap found 11/20; nine stateful trials were censored. This validates that the stateful representation can express and sometimes reach the chain. It is a controlled sanity check, not a general performance benchmark.
+## Reproduce the simulation path
 
-The separate minimization fixture shrinks from 14 to 3 operations and from 552 to 188 canonical bytes while retaining a 3/3 matching replay vote.
+### Requirements
 
-## Quick start
+- Windows, Linux, or macOS for the simulation path
+- .NET SDK `8.0.100` exactly, as pinned by [`global.json`](global.json)
+- No administrator rights, WDK, Hyper-V, or VM
 
-Prerequisite: a .NET 10 SDK. The projects target `net8.0`; simulation requires no administrator privileges, WDK, Hyper-V, VM, or driver installation.
+### Build and test
 
 ```powershell
-git clone https://github.com/niansia/KCrashLab.git
-cd KCrashLab
+dotnet --version
 dotnet restore KCrashLab.sln
-dotnet test KCrashLab.sln -c Release
+dotnet build KCrashLab.sln --configuration Release --no-restore
+dotnet test KCrashLab.sln --configuration Release --no-build
 ```
 
-Probe the current machine without changing it:
+### Run a deterministic campaign
 
 ```powershell
-dotnet run --project src/KCrashLab.Cli -c Release -- `
-  lab probe --output artifacts/capability-report.json
-```
-
-Run and verify the safe end-to-end fixture:
-
-```powershell
-dotnet run --project src/KCrashLab.Cli -c Release -- `
-  campaign run --scenario dump-ready `
+dotnet run --project src/KCrashLab.Cli --configuration Release -- `
+  campaign run `
+  --scenario dump-ready `
   --case samples/cases/state-original.case.json `
   --output artifacts/demo
 
-dotnet run --project src/KCrashLab.Cli -c Release -- `
-  evidence verify artifacts/demo/finding
+dotnet run --project src/KCrashLab.Cli --configuration Release -- `
+  evidence verify artifacts/demo
 ```
 
-Run deterministic fuzz discovery:
+### Run deterministic discovery
 
 ```powershell
-dotnet run --project src/KCrashLab.Cli -c Release -- `
-  fuzz run --seed samples/cases/state-safe-seed.case.json `
-  --strategy novelty --budget 256 --campaign-seed 20260831 `
+dotnet run --project src/KCrashLab.Cli --configuration Release -- `
+  fuzz run `
+  --seed samples/cases/state-safe-seed.case.json `
+  --budget 256 `
+  --campaign-seed 20260831 `
   --output artifacts/fuzz
 
-dotnet run --project src/KCrashLab.Cli -c Release -- `
+dotnet run --project src/KCrashLab.Cli --configuration Release -- `
   fuzz verify artifacts/fuzz
 ```
 
-Run the two recorded experiment designs:
+### Run the controlled experiments
 
 ```powershell
-dotnet run --project src/KCrashLab.Cli -c Release -- `
-  experiment e1 --seed samples/cases/state-safe-seed.case.json `
-  --budget 256 --trials 20 --base-seed 20260831 `
+dotnet run --project src/KCrashLab.Cli --configuration Release -- `
+  experiment e1 `
+  --seed samples/cases/state-safe-seed.case.json `
+  --budget 256 `
+  --trials 20 `
+  --base-seed 20260831 `
   --output artifacts/e1
 
-dotnet run --project src/KCrashLab.Cli -c Release -- `
-  experiment e2 --seed samples/cases/state-reset-seed.case.json `
-  --budget 512 --trials 20 --base-seed 20260831 `
+dotnet run --project src/KCrashLab.Cli --configuration Release -- `
+  experiment e2 `
+  --seed samples/cases/state-reset-seed.case.json `
+  --budget 512 `
+  --trials 20 `
+  --base-seed 20260831 `
   --output artifacts/e2
 
-dotnet run --project src/KCrashLab.Cli -c Release -- experiment verify artifacts/e1
-dotnet run --project src/KCrashLab.Cli -c Release -- experiment verify artifacts/e2
+dotnet run --project src/KCrashLab.Cli --configuration Release -- `
+  experiment verify artifacts/e1
+
+dotnet run --project src/KCrashLab.Cli --configuration Release -- `
+  experiment verify artifacts/e2
 ```
 
-## Design properties
+E1 is a paired 2×2 ablation of corpus admission and parent selection. E2 changes only the maximum sequence length, making it an expressiveness check for a known multi-step synthetic condition—not a general performance claim. See the [E1](docs/experiments/E1-mutation-strategy.md) and [E2](docs/experiments/E2-stateful-sequences.md) experiment records for controls and interpretation limits.
 
-- **Fail closed:** an unavailable real-lab prerequisite produces `BLOCKED_BY_ENVIRONMENT`; it never falls back to the host.
-- **Deterministic decisions:** parent, operator, and candidate decisions use independent SHA-256-derived lanes keyed by campaign seed and scheduling iteration.
-- **Crash ≠ infrastructure failure:** timeouts, corrupt artifacts, and agent loss do not become findings.
-- **Exact-byte evidence:** manifests reject modified, missing, and untracked files.
-- **Semantic verification:** verifiers recompute experiment invariants instead of checking hashes alone.
-- **Fault-injected recovery:** tests cover ambiguous commits, duplicate/colliding events, interrupted/corrupt CAS writes, manifest loss, and invalid virtual-clock jumps.
-- **Claims discipline:** every simulated report carries a mandatory simulation banner and explicit non-claims.
+## Recorded artifacts and provenance
+
+Reviewer-facing synthetic artifacts are stored under:
+
+- [`results/recorded/g3`](results/recorded/g3) — deterministic discovery;
+- [`results/recorded/e1`](results/recorded/e1) — policy ablation;
+- [`results/recorded/e2`](results/recorded/e2) — stateful versus single-call experiment.
+
+Local `artifacts/*` directories are disposable outputs and are not authoritative. A recorded result is accepted only after generation from a clean commit, semantic verification, and an independent deterministic rerun with a matching manifest. Provenance records the source revision, source-tree digest, Case IR version, engine version, experiment-definition digest, and timestamp policy.
+
+Historical artifacts do not retroactively inherit stronger guarantees from newer code. Read [`docs/status.md`](docs/status.md) before citing a result.
+
+## Controlled Windows-lab track
+
+The repository also contains a separately gated implementation for the project-owned test target:
+
+- a safe-default KMDF build and a distinct opt-in lab build;
+- a fixed device interface and allowlisted request contract;
+- a Windows guest dispatcher with a durable attempt journal;
+- a versioned private profile and fail-closed validation;
+- exact VM/checkpoint/private-network checks;
+- one discovery attempt followed by three clean-checkpoint replays;
+- dump-readiness checks, WinDbg parsing, exact signatures, and sanitized public evidence construction.
+
+This track is not run by normal CI and is not runtime-verified by the checked-in repository. Its entry point requires an explicitly prepared, disposable, isolated owner-controlled environment. The full prerequisites and publication boundary are documented in the [controlled-lab runbook](docs/track-b-runbook.md) and [publication checklist](docs/publication-checklist.md).
 
 ## Repository layout
 
 | Path | Responsibility |
 |---|---|
-| [`src/KCrashLab.Contracts`](src/KCrashLab.Contracts) | Versioned Case IR, campaign, fuzzing, experiment, and evidence contracts |
-| [`src/KCrashLab.Domain`](src/KCrashLab.Domain) | Canonical identity, policy engine, mutation, signatures, replay, minimization |
-| [`src/KCrashLab.Storage`](src/KCrashLab.Storage) | SQLite journal, content-addressed storage, evidence manifests |
-| [`src/KCrashLab.Simulation`](src/KCrashLab.Simulation) | Capability probe, deterministic fixtures, synthetic target, virtual clock |
-| [`src/KCrashLab.Controller`](src/KCrashLab.Controller) | Resumable orchestration and artifact production/verification |
+| [`src/KCrashLab.Contracts`](src/KCrashLab.Contracts) | Versioned backend, case, experiment, and evidence contracts |
+| [`src/KCrashLab.Domain`](src/KCrashLab.Domain) | Canonicalization, scheduling, mutation, signatures, replay, and minimization |
+| [`src/KCrashLab.Storage`](src/KCrashLab.Storage) | SQLite journal and content-addressed storage |
+| [`src/KCrashLab.Simulation`](src/KCrashLab.Simulation) | Virtual clock, scripted backend, synthetic target, and environment gates |
+| [`src/KCrashLab.Controller`](src/KCrashLab.Controller) | Resumable orchestration and artifact production |
+| [`src/KCrashLab.GuestAgent`](src/KCrashLab.GuestAgent) | Windows-only dispatcher for the fixed project-owned contract |
+| [`drivers/KCrashLab.Target`](drivers/KCrashLab.Target) | Repository-owned KMDF target source |
 | [`schemas`](schemas) | JSON Schema 2020-12 contracts |
-| [`tests`](tests) | Unit, component, contract, golden-fixture, and fault-injection tests |
-| [`docs`](docs) | Architecture, safety, threat model, ADR, and experiment records |
+| [`tests`](tests) | Unit, component, contract, recovery, and golden-fixture tests |
+| [`docs`](docs) | Architecture, methods, safety boundaries, claims, and experiment records |
 
-## Reproduce the checked-in claims
+## Research integrity and limitations
 
-The exact commands and interpretation boundaries are documented in:
+- `SIMULATED` and `REAL_LAB` are separate evidence classes and may not be conflated.
+- No checked-in artifact currently establishes a real-machine result.
+- Synthetic discovery latency is not a benchmark of real target performance.
+- E2 is a controlled sanity experiment, not a universal claim about stateful methods.
+- Manifests establish integrity after production; they do not prove that the producing machine was honest.
+- Raw memory captures and unreviewed diagnostic output are private by default.
+- Third-party targeting, exploitability assessment, and exploit generation are outside project scope.
 
-- [G3 deterministic discovery](docs/experiments/G3-fuzz-discovery.md)
-- [E1 2×2 policy ablation](docs/experiments/E1-mutation-strategy.md)
-- [E2 stateful expressiveness](docs/experiments/E2-stateful-sequences.md)
+The mapping from every public claim to its supporting artifact is maintained in the [research claims and evidence ledger](docs/research-claims.md).
+
+## Documentation
+
 - [Architecture](docs/architecture.md)
 - [Implementation status](docs/status.md)
 - [Threat model](docs/threat-model.md)
 - [Lab safety policy](docs/lab-safety.md)
-
-## Safety and scope
-
-KCrashLab is limited to repository-owned synthetic targets and offline evidence. Do not use it to probe third-party drivers or devices. It contains no exploit generation, privilege-escalation chain, persistence, evasion, host-kernel fuzzing, or deliberately vulnerable kernel driver. Memory dumps are excluded from source packages because they can contain secrets and personal data.
-
-See [`SECURITY.md`](SECURITY.md) before extending Track B.
-
-## Roadmap
-
-1. Add multiple synthetic targets with deliberately coarse feedback and preregistered ablations.
-2. Add similarity-assisted clustering with auditable manual split/merge records.
-3. Complete intermediate-state evidence-production resume and CAS retention metadata.
-4. Build Track B only inside a disposable Windows Pro/Enterprise VM with immutable checkpoint, WDK, Driver Verifier recovery, dump-space validation, and a tested kill switch.
+- [Reviewer packaging guide](docs/packaging.md)
+- [Security policy](SECURITY.md)
+- [Citation metadata](CITATION.cff)
 
 ## License
 
-No open-source license has been granted. Normal copyright restrictions apply. A license should be selected explicitly before accepting reuse or external contributions.
+Licensed under the [Apache License 2.0](LICENSE).

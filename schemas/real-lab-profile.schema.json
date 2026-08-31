@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kcrashlab.local/schemas/real-lab-profile.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "execution_mode", "vm_id", "checkpoint_id", "guest_build", "driver_sha256", "driver_file_name", "device_path", "device_interface_guid", "exchange_root", "dump_relative_path", "authorization_id", "disposable_lab", "network_isolated", "immutable_checkpoint", "heartbeat_timeout_seconds", "dump_stability_seconds"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "execution_mode": { "const": "REAL_LAB" },
+    "vm_id": { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" },
+    "checkpoint_id": { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" },
+    "guest_build": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "driver_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "driver_file_name": { "const": "KCrashLabTarget.sys" },
+    "device_path": { "const": "\\\\.\\KCrashLabTarget" },
+    "device_interface_guid": { "const": "4fd15d37-1f06-4e50-a823-376ad418f196" },
+    "exchange_root": { "type": "string", "minLength": 4, "maxLength": 260 },
+    "dump_relative_path": { "const": "dumps/MEMORY.DMP" },
+    "authorization_id": { "type": "string", "pattern": "^[A-Za-z0-9._-]{8,128}$" },
+    "disposable_lab": { "const": true },
+    "network_isolated": { "const": true },
+    "immutable_checkpoint": { "const": true },
+    "heartbeat_timeout_seconds": { "type": "integer", "minimum": 5, "maximum": 300 },
+    "dump_stability_seconds": { "type": "integer", "minimum": 5, "maximum": 600 }
+  }
+}

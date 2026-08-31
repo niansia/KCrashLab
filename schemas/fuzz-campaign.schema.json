@@ -2,41 +2,157 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://kcrashlab.dev/schemas/fuzz-campaign.schema.json",
   "type": "object",
-  "required": ["schema_version", "execution_mode", "strategy", "campaign_seed", "budget", "executions", "seed_case_id", "corpus_count", "coverage_count", "raw_synthetic_failures", "exact_signatures", "provenance", "findings", "claims"],
+  "required": [
+    "schema_version",
+    "execution_mode",
+    "strategy",
+    "campaign_seed",
+    "budget",
+    "executions",
+    "termination_reason",
+    "scheduling_iterations",
+    "scheduling_limit",
+    "duplicate_candidate_skips",
+    "empty_candidate_polls",
+    "candidate_enumeration",
+    "max_candidates",
+    "seed_case_id",
+    "corpus_count",
+    "coverage_count",
+    "raw_synthetic_failures",
+    "exact_signatures",
+    "provenance",
+    "findings",
+    "claims"
+  ],
   "properties": {
-    "schema_version": { "const": 1 },
-    "execution_mode": { "const": "SIMULATED" },
-    "strategy": { "enum": ["KEEP_ALL_UNIFORM_V2", "KEEP_ALL_ENERGY_V2", "NOVELTY_ONLY_UNIFORM_V2", "NOVELTY_ONLY_ENERGY_V2"] },
-    "campaign_seed": { "type": "integer", "minimum": 0 },
-    "budget": { "type": "integer", "minimum": 1, "maximum": 1000000 },
-    "executions": { "type": "integer", "minimum": 1 },
-    "seed_case_id": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
-    "corpus_count": { "type": "integer", "minimum": 1 },
-    "coverage_count": { "type": "integer", "minimum": 1 },
-    "raw_synthetic_failures": { "type": "integer", "minimum": 0 },
-    "exact_signatures": { "type": "integer", "minimum": 0 },
-    "provenance": { "$ref": "#/$defs/provenance" },
+    "schema_version": {
+      "const": 1
+    },
+    "execution_mode": {
+      "const": "SIMULATED"
+    },
+    "strategy": {
+      "enum": [
+        "KEEP_ALL_UNIFORM_V2",
+        "KEEP_ALL_ENERGY_V2",
+        "NOVELTY_ONLY_UNIFORM_V2",
+        "NOVELTY_ONLY_ENERGY_V2"
+      ]
+    },
+    "campaign_seed": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "budget": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000000
+    },
+    "executions": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "termination_reason": {
+      "enum": [
+        "BUDGET_REACHED",
+        "SCHEDULER_ITERATION_LIMIT_REACHED"
+      ]
+    },
+    "scheduling_iterations": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "scheduling_limit": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "duplicate_candidate_skips": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "empty_candidate_polls": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "candidate_enumeration": {
+      "const": "HASH_RANKED_V1"
+    },
+    "max_candidates": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "seed_case_id": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "corpus_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "coverage_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "raw_synthetic_failures": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "exact_signatures": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "provenance": {
+      "$ref": "#/$defs/provenance"
+    },
     "findings": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["signature", "first_case_id", "first_execution", "occurrences"],
+        "required": [
+          "signature",
+          "first_case_id",
+          "first_execution",
+          "occurrences"
+        ],
         "properties": {
-          "signature": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
-          "first_case_id": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
-          "first_execution": { "type": "integer", "minimum": 1 },
-          "occurrences": { "type": "integer", "minimum": 1 }
+          "signature": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "first_case_id": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "first_execution": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "occurrences": {
+            "type": "integer",
+            "minimum": 1
+          }
         },
         "additionalProperties": false
       }
     },
     "claims": {
       "type": "object",
-      "required": ["kernel_crashes", "root_causes", "exploitability"],
+      "required": [
+        "kernel_crashes",
+        "root_causes",
+        "exploitability"
+      ],
       "properties": {
-        "kernel_crashes": { "const": "NOT_CLAIMED" },
-        "root_causes": { "const": "NOT_CLAIMED" },
-        "exploitability": { "const": "NOT_ASSESSED" }
+        "kernel_crashes": {
+          "const": "NOT_CLAIMED"
+        },
+        "root_causes": {
+          "const": "NOT_CLAIMED"
+        },
+        "exploitability": {
+          "const": "NOT_ASSESSED"
+        }
       },
       "additionalProperties": false
     }
@@ -45,14 +161,76 @@
   "$defs": {
     "provenance": {
       "type": "object",
-      "required": ["recorded_at_utc", "git_commit", "source_tree_digest", "experiment_definition_digest", "case_schema_version", "engine_version"],
+      "required": [
+        "recorded_at_utc",
+        "git_commit",
+        "source_tree_digest",
+        "experiment_definition_digest",
+        "case_schema_version",
+        "engine_version"
+      ],
       "properties": {
-        "recorded_at_utc": { "anyOf": [{ "const": "UNSPECIFIED" }, { "type": "string", "format": "date-time" }] },
-        "git_commit": { "anyOf": [{ "const": "UNCOMMITTED" }, { "type": "string", "pattern": "^(?:[a-fA-F0-9]{40}|[a-fA-F0-9]{64})$" }] },
-        "source_tree_digest": { "anyOf": [{ "const": "UNSPECIFIED" }, { "type": "string", "pattern": "^[a-f0-9]{64}$" }] },
-        "experiment_definition_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
-        "case_schema_version": { "const": 1 },
-        "engine_version": { "const": "1.3.0-sim" }
+        "recorded_at_utc": {
+          "anyOf": [
+            {
+              "const": "UNSPECIFIED"
+            },
+            {
+              "type": "string",
+              "format": "date-time"
+            }
+          ]
+        },
+        "git_commit": {
+          "anyOf": [
+            {
+              "const": "UNCOMMITTED"
+            },
+            {
+              "type": "string",
+              "pattern": "^(?:[a-fA-F0-9]{40}|[a-fA-F0-9]{64})$"
+            }
+          ]
+        },
+        "source_tree_digest": {
+          "anyOf": [
+            {
+              "const": "UNSPECIFIED"
+            },
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          ]
+        },
+        "experiment_definition_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "case_schema_version": {
+          "const": 1
+        },
+        "engine_version": {
+          "const": "1.3.0-sim"
+        },
+        "source_commit_time_utc": {
+          "anyOf": [
+            {
+              "const": "UNSPECIFIED"
+            },
+            {
+              "type": "string",
+              "format": "date-time"
+            }
+          ]
+        },
+        "reproducible_timestamp_policy": {
+          "enum": [
+            "UNSPECIFIED",
+            "SOURCE_COMMIT_TIME",
+            "WALL_CLOCK"
+          ]
+        }
       },
       "additionalProperties": false
     }

@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text.Json;
 using KCrashLab.Contracts;
 using KCrashLab.Controller;
@@ -16,6 +17,65 @@ internal static class KCrashCli
             if (args is ["lab", "probe", ..])
             {
                 return await ProbeAsync(args[2..], cancellationToken).ConfigureAwait(false);
+            }
+
+            if (args is ["lab", "validate-profile", var profilePath])
+            {
+                var profile = JsonSerializer.Deserialize<RealLabProfile>(
+                    await File.ReadAllBytesAsync(profilePath, cancellationToken).ConfigureAwait(false), ContractJson.Compact)
+                    ?? throw new InvalidDataException("Real-lab profile is empty.");
+                var validation = RealLabProfileValidator.Validate(profile);
+                Console.WriteLine(validation.IsValid ? "VALID: Track B profile gates passed." : "BLOCKED_BY_PROFILE");
+                foreach (var error in validation.Errors) Console.Error.WriteLine($"- {error}");
+                return validation.IsValid ? 0 : 2;
+            }
+
+            if (args is ["lab", "triage", var rawPath, "--output", var analysisPath])
+            {
+                var analysis = RealWindbgParser.Parse(await File.ReadAllTextAsync(rawPath, cancellationToken).ConfigureAwait(false));
+                Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(analysisPath))!);
+                await File.WriteAllBytesAsync(analysisPath, JsonSerializer.SerializeToUtf8Bytes(analysis, ContractJson.Indented), cancellationToken).ConfigureAwait(false);
+                Console.WriteLine(SignatureV1.Compute(analysis));
+                return 0;
+            }
+
+            if (args is ["lab", "evidence", "build", "--acquisition", var acquisitionPath, "--output", var evidenceOutput])
+            {
+                var acquisition = JsonSerializer.Deserialize<RealLabAcquisition>(await File.ReadAllBytesAsync(acquisitionPath, cancellationToken), ContractJson.Compact)
+                    ?? throw new InvalidDataException("Acquisition document is empty.");
+                if (acquisition.SchemaVersion != 1 || acquisition.ExecutionMode != "REAL_LAB") throw new InvalidDataException("Unsupported acquisition document.");
+                if (string.IsNullOrWhiteSpace(acquisition.OriginalCasePath) || string.IsNullOrWhiteSpace(acquisition.MinimizedCasePath)
+                    || string.IsNullOrWhiteSpace(acquisition.RawWindbgPath) || acquisition.Replays is null)
+                    throw new InvalidDataException("Acquisition document is missing required paths or replay records.");
+                var original = CaseCanonicalizer.Parse(await File.ReadAllBytesAsync(acquisition.OriginalCasePath, cancellationToken));
+                var minimized = CaseCanonicalizer.Parse(await File.ReadAllBytesAsync(acquisition.MinimizedCasePath, cancellationToken));
+                var rawWindbgBytes = await File.ReadAllBytesAsync(acquisition.RawWindbgPath, cancellationToken);
+                var actualRawHash = Convert.ToHexString(SHA256.HashData(rawWindbgBytes)).ToLowerInvariant();
+                if (acquisition.RawWindbgSha256.Length != 64 || acquisition.RawWindbgSha256.Any(static item => item is not (>= '0' and <= '9') and not (>= 'a' and <= 'f')))
+                    throw new InvalidDataException("Acquisition raw_windbg_sha256 is invalid.");
+                if (!CryptographicOperations.FixedTimeEquals(Convert.FromHexString(actualRawHash), Convert.FromHexString(acquisition.RawWindbgSha256)))
+                    throw new InvalidDataException("Raw WinDbg output does not match acquisition SHA-256.");
+                var input = new RealLabEvidenceInput(original, minimized, acquisition.DriverSha256, acquisition.VmIdentitySha256,
+                    acquisition.CheckpointIdentitySha256, acquisition.AuthorizationSha256, acquisition.GuestBuild, acquisition.SymbolsSha256, acquisition.DumpSha256,
+                    acquisition.RawWindbgSha256,
+                    acquisition.DiscoveryJournalSha256, acquisition.DiscoveryWatchdogSha256,
+                    System.Text.Encoding.UTF8.GetString(rawWindbgBytes),
+                    acquisition.Replays.Select(static replay => new RealLabReplayRecord(replay.Attempt, replay.Classification, replay.Signature,
+                        replay.DumpSha256, replay.JournalSha256, replay.WatchdogSha256)).ToArray(),
+                    acquisition.RecordedAtUtc, acquisition.GitCommit);
+                await RealLabEvidence.BuildAsync(evidenceOutput, input, cancellationToken).ConfigureAwait(false);
+                var verified = await RealLabEvidence.VerifyAsync(evidenceOutput, cancellationToken).ConfigureAwait(false);
+                Console.WriteLine(verified.IsValid ? $"VERIFIED REAL_LAB EVIDENCE: {verified.VerifiedFiles} files." : "REAL_LAB EVIDENCE VERIFICATION FAILED.");
+                foreach (var error in verified.Errors) Console.Error.WriteLine($"- {error}");
+                return verified.IsValid ? 0 : 2;
+            }
+
+            if (args is ["lab", "evidence", "verify", var realBundle])
+            {
+                var verified = await RealLabEvidence.VerifyAsync(realBundle, cancellationToken).ConfigureAwait(false);
+                Console.WriteLine(verified.IsValid ? $"VERIFIED REAL_LAB EVIDENCE: {verified.VerifiedFiles} files." : "REAL_LAB EVIDENCE VERIFICATION FAILED.");
+                foreach (var error in verified.Errors) Console.Error.WriteLine($"- {error}");
+                return verified.IsValid ? 0 : 2;
             }
 
             if (args is ["case", "id", var casePath])
@@ -460,6 +520,10 @@ internal static class KCrashCli
 
             Commands:
               kcrash lab probe --output <capability-report.json>
+              kcrash lab validate-profile <real-lab-profile.json>
+              kcrash lab triage <windbg.raw.txt> --output <analysis.json>
+              kcrash lab evidence build --acquisition <acquisition.json> --output <bundle-directory>
+              kcrash lab evidence verify <bundle-directory>
               kcrash case id <case.json>
               kcrash campaign run --scenario <name> --case <case.json> --output <directory>
               kcrash evidence verify <bundle-directory>

@@ -2,6 +2,7 @@ name: simulation-ci
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 permissions:
@@ -9,7 +10,7 @@ permissions:
 
 jobs:
   safe-simulation:
-    runs-on: windows-latest
+    runs-on: windows-2022
     timeout-minutes: 15
 
     steps:
@@ -17,11 +18,17 @@ jobs:
 
       - uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: |
-            10.0.x
-            8.0.x
+          dotnet-version: 8.0.100
           cache: true
           cache-dependency-path: Directory.Packages.props
+
+      - name: Parse Track B PowerShell without execution
+        shell: pwsh
+        run: |
+          $errors = $null
+          [void][Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path scripts/track-b-g1.ps1), [ref]$null, [ref]$errors)
+          if ($errors.Count) { $errors | Format-List | Out-String | Write-Error }
 
       - name: Restore
         run: dotnet restore KCrashLab.sln
@@ -30,7 +37,7 @@ jobs:
         run: dotnet build KCrashLab.sln --configuration Release --no-restore
 
       - name: Audit dependencies
-        run: dotnet list KCrashLab.sln package --vulnerable --include-transitive
+        run: dotnet list "${{ github.workspace }}/KCrashLab.sln" package --vulnerable --include-transitive
 
       - name: Test simulation contracts
         run: dotnet test KCrashLab.sln --configuration Release --no-build --logger "trx;LogFileName=simulation.trx"
@@ -76,3 +83,22 @@ jobs:
             artifacts/KCrashLab-source.zip
           if-no-files-found: warn
           retention-days: 7
+
+  cross-platform-simulation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 8.0.100
+          cache: true
+          cache-dependency-path: Directory.Packages.props
+
+      - name: Restore exact dependency graph
+        run: dotnet restore KCrashLab.sln
+
+      - name: Test cross-platform simulation contracts
+        run: dotnet test KCrashLab.sln --configuration Release --no-restore

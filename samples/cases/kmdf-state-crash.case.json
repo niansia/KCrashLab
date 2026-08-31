@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "target": "kcl.kmdf",
+  "seed": 41821,
+  "operations": [
+    { "ioctl": "RESET_STATE" },
+    { "ioctl": "SET_MODE", "fields": { "mode": 2 } },
+    { "ioctl": "SUBMIT_RECORD", "fields": { "declared_len": 64, "payload": "AAAA" } }
+  ],
+  "schedule": { "workers": 1, "delays_us": [0, 0, 0] }
+}

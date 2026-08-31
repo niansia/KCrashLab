@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "execution_mode": "REAL_LAB",
+  "vm_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  "checkpoint_id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+  "guest_build": "REPLACE_OsName|OsVersion|WindowsBuildLabEx",
+  "driver_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "driver_file_name": "KCrashLabTarget.sys",
+  "device_path": "\\\\.\\KCrashLabTarget",
+  "device_interface_guid": "4fd15d37-1f06-4e50-a823-376ad418f196",
+  "exchange_root": "D:\\KCrashLabExchange",
+  "dump_relative_path": "dumps/MEMORY.DMP",
+  "authorization_id": "REPLACE_WITH_PRIVATE_LAB_AUTHORIZATION",
+  "disposable_lab": true,
+  "network_isolated": true,
+  "immutable_checkpoint": true,
+  "heartbeat_timeout_seconds": 30,
+  "dump_stability_seconds": 15
+}

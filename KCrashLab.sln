@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KCrashLab.Controller", "src
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KCrashLab.Cli", "src\KCrashLab.Cli\KCrashLab.Cli.csproj", "{11190E05-0B4F-4C98-A432-B5EB00D9BECA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KCrashLab.GuestAgent", "src\KCrashLab.GuestAgent\KCrashLab.GuestAgent.csproj", "{4D99434B-D48F-4D99-8965-3173C1B06A3A}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KCrashLab.Tests", "tests\KCrashLab.Tests\KCrashLab.Tests.csproj", "{5574D5A1-A2FD-4B25-9879-B4001C69BABB}"
 EndProject
 Global
@@ -47,10 +49,13 @@ Global
 		{11190E05-0B4F-4C98-A432-B5EB00D9BECA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{11190E05-0B4F-4C98-A432-B5EB00D9BECA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{11190E05-0B4F-4C98-A432-B5EB00D9BECA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4D99434B-D48F-4D99-8965-3173C1B06A3A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D99434B-D48F-4D99-8965-3173C1B06A3A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D99434B-D48F-4D99-8965-3173C1B06A3A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D99434B-D48F-4D99-8965-3173C1B06A3A}.Release|Any CPU.Build.0 = Release|Any CPU
 		{5574D5A1-A2FD-4B25-9879-B4001C69BABB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5574D5A1-A2FD-4B25-9879-B4001C69BABB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5574D5A1-A2FD-4B25-9879-B4001C69BABB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5574D5A1-A2FD-4B25-9879-B4001C69BABB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
-

@@ -9,9 +9,8 @@ The current host is Windows 11 Home. A hypervisor is present, but the supported 
 
 ## Decision
 
-KCrashLab v1 implements the control plane against a deterministic `SimulatedLabBackend`. All output is labeled `SIMULATED`. `HyperVLabBackend` remains a fail-closed contract skeleton. No driver is built, installed, or loaded on the host.
+KCrashLab v1 implements ordinary campaigns against a deterministic `SimulatedLabBackend`. All simulation output is labeled `SIMULATED`, and `HyperVLabBackend` remains a fail-closed contract skeleton. Track B source may be built only through the explicit environment-protected workflow and may execute only through the destructive-lab G1 script after its private gates pass; neither path can fall back to the host.
 
 ## Consequences
 
-The project can validate event sourcing, idempotency, timeout classification, evidence integrity, signatures, replay, and minimization now. It cannot claim real BSOD recovery, kernel coverage, Driver Verifier results, or a Windows kernel finding.
-
+The project can validate event sourcing, idempotency, timeout classification, evidence integrity, signatures, replay, minimization, real-profile policy, WinDbg parsing, and sanitized evidence semantics without a kernel lab. It cannot claim real BSOD recovery, Driver Verifier behavior, or a Windows kernel finding until the G1 script produces a sanitized bundle from the pinned environment and that bundle verifies offline.

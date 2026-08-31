@@ -1,38 +1,23 @@
-# E1 simulated 2×2 policy ablation
+# E1 simulated mutation-strategy experiment
 
 Date: 2026-08-31
 
-Experiment contract: `E1_POLICY_ABLATION_2X2_V2`
-
 ## Question
 
-Within one valid Case IR mutation envelope, how do corpus admission and parent selection interact when searching for the known `kcl.state` synthetic signature under a fixed execution budget?
+Within the same valid Case IR mutation envelope, what are the separate descriptive effects of corpus-admission feedback and parent scheduling on discovery of the known `kcl.state` synthetic signature under a fixed execution budget?
 
-This revision replaces the earlier two-engine comparison. The earlier design changed admission, parent selection, operator selection, candidate selection, and enumeration behavior together, so it could compare complete strategies but could not isolate novelty. Its result is superseded and is not cited as component-level evidence.
+E1 v2 is a 2×2 policy ablation. It crosses keep-all versus novelty-only corpus admission with uniform versus energy-ranked parent selection. Operator selection and candidate selection are uniform in every arm; all arms use the same boundary scalar, payload block, and sequence insert/delete/swap operators. This avoids attributing the effect of several simultaneously changed scheduling decisions to semantic novelty alone.
 
-## Factorial design
+## Fixed design
 
-Two factors are crossed:
-
-| Factor | Level A | Level B |
-|---|---|---|
-| Corpus admission | keep every executed case | retain only semantic novelty or a signature |
-| Parent selection | uniform | energy-ranked |
-
-All four arms share:
-
-- `PolicyDrivenFuzzEngine` and the same evaluator;
-- the boundary scalar, payload block, and sequence insert/delete/swap operators;
-- the same deterministic candidate-enumeration implementation and uniform operator/candidate selection policies;
-- safe seed `samples/cases/state-safe-seed.case.json`;
-- 256 executions per trial;
-- 20 paired campaign seeds, 20260831 through 20260850;
-- the first exact matching signature as the event;
-- right censoring when no signature is found by the fixed budget.
-
-Parent, operator, and candidate choices use independent SHA-256-derived decision lanes. A policy cannot change later operator/candidate choices merely by consuming a different number of PRNG values.
-
-## Reproduction
+- Safe seed: `samples/cases/state-safe-seed.case.json`.
+- Target: deterministic user-mode `kcl.state` model.
+- Strategies: `KEEP_ALL_UNIFORM_V2`, `KEEP_ALL_ENERGY_V2`, `NOVELTY_ONLY_UNIFORM_V2`, and `NOVELTY_ONLY_ENERGY_V2`.
+- Budget: 256 executions per arm and trial.
+- Trials: 20 paired campaign seeds from 20260831 through 20260850.
+- Outcome: first exact matching signature; no finding at execution 256 is right-censored.
+- Quantiles: linear interpolation, calculated among successful trials only.
+- Integrity: summary, raw CSV, and static report are covered by one SHA-256 manifest and an offline semantic verifier.
 
 ```powershell
 dotnet run --project src/KCrashLab.Cli --configuration Release -- experiment e1 `
@@ -40,7 +25,7 @@ dotnet run --project src/KCrashLab.Cli --configuration Release -- experiment e1 
   --budget 256 `
   --trials 20 `
   --base-seed 20260831 `
-  --recorded-at 2026-08-31T00:00:00Z `
+  --recorded-at SOURCE_COMMIT_TIME `
   --output results/recorded/e1
 
 dotnet run --project src/KCrashLab.Cli --configuration Release -- experiment verify results/recorded/e1
@@ -48,28 +33,12 @@ dotnet run --project src/KCrashLab.Cli --configuration Release -- experiment ver
 
 ## Recorded descriptive result
 
-| Admission | Parent | Discoveries | Censored | Discovery rate | Successful-trial first finding median [Q1, Q3]* |
-|---|---|---:|---:|---:|---:|
-| Keep all | Uniform | 5/20 | 15 | 25% | 121 [91, 210] |
-| Keep all | Energy | 14/20 | 6 | 70% | 111 [81, 127.75] |
-| Novelty only | Uniform | 16/20 | 4 | 80% | 129 [87.25, 184.75] |
-| Novelty only | Energy | 13/20 | 7 | 65% | 125 [97, 173] |
+The checked-in `results/recorded/e1` directory is a legacy v1 two-engine record and is retained only for provenance. It does **not** answer the v2 ablation question and must not be cited as evidence that semantic novelty alone caused its 20/20 versus 5/20 result. A canonical v2 table will be added only after all four arms are run from a committed source tree and the generated bundle passes `experiment verify`.
 
-*Quantiles use linear interpolation among successful trials only. They must not be compared without the discovery and censoring counts.
+The v2 report includes `1 − Kaplan–Meier survival` for every arm and paired contrasts for admission at each parent policy and parent policy at each admission policy. No p-value is reported because the deterministic seed suite is not claimed to be a random sample from a wider target population. The experiment does not establish external validity, real-driver performance, kernel coverage effectiveness, or a general advantage across targets.
 
-Planned paired contrasts:
+## Reproducibility correction made during the study
 
-| Contrast | Both | Left only | Right only | Neither |
-|---|---:|---:|---:|---:|
-| Novelty vs keep-all at uniform parent | 3 | 13 | 2 | 2 |
-| Novelty vs keep-all at energy parent | 11 | 2 | 3 | 4 |
-| Energy vs uniform at keep-all admission | 5 | 9 | 0 | 6 |
-| Energy vs uniform at novelty admission | 11 | 2 | 5 | 2 |
+An initial dry run revealed that the novelty engine recorded campaign seeds without using them to change scheduling, so its nominal trials repeated one path. That result was rejected. The final engine uses an explicit SplitMix64 schedule to rotate operator and candidate order; same-seed execution logs remain identical, while different seeds are contract-tested to produce different orders.
 
-## Interpretation boundary
-
-The checked-in target shows an interaction, not one uniformly dominant component. Novelty-only admission increases discovery count under uniform parent selection (16 versus 5), but not under energy parent selection (13 versus 14). Energy selection increases discovery count under keep-all admission (14 versus 5), but not under novelty-only admission (13 versus 16).
-
-This is valuable as a design diagnostic: it rejects the simplistic claim that either novelty admission or energy selection is independently superior on every configuration. It does not establish statistical significance, external validity, real-driver performance, or kernel-coverage effectiveness. Those claims remain `NOT_ASSESSED` or `NOT_CLAIMED` in the artifact.
-
-`raw.csv` preserves all 80 trial outcomes. `survival.csv` is derived from the raw trials and checked by the verifier. The static report shows `1 − Kaplan–Meier survival`, retaining no-finding trials in the risk set through the censoring boundary.
+The v2 artifact's `raw.csv` preserves all 80 trial outcomes, including every censored trial; `survival.csv` and `contrasts.csv` are deterministically derived and cross-checked by the verifier. Re-running the exact command must produce a byte-identical manifest before the record is accepted.

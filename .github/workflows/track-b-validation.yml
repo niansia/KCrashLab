@@ -1,0 +1,70 @@
+name: track-b-source-validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-windows-build:
+    runs-on: [self-hosted, Windows, X64, kcrashlab-isolated]
+    environment: kcrashlab-track-b
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+          cache: true
+          cache-dependency-path: Directory.Packages.props
+
+      - name: Verify Track B script syntax without execution
+        shell: pwsh
+        run: |
+          $errors = $null
+          [void][Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path scripts/track-b-g1.ps1), [ref]$null, [ref]$errors)
+          if ($errors.Count) { $errors | Format-List | Out-String | Write-Error }
+
+      - name: Build and test managed contracts
+        shell: pwsh
+        run: |
+          dotnet restore KCrashLab.sln
+          dotnet build KCrashLab.sln --configuration Release --no-restore
+          dotnet test KCrashLab.sln --configuration Release --no-build
+
+      - name: Build safe KMDF target
+        shell: pwsh
+        run: |
+          $out = (Join-Path $env:RUNNER_TEMP 'kcl-safe') + [IO.Path]::DirectorySeparatorChar
+          msbuild drivers/KCrashLab.Target/KCrashLab.Target.vcxproj /restore /p:Configuration=Release /p:Platform=x64 /p:KclLabFaults=false "/p:OutDir=$out"
+
+      - name: Build lab KMDF target separately
+        shell: pwsh
+        run: |
+          $out = (Join-Path $env:RUNNER_TEMP 'kcl-lab') + [IO.Path]::DirectorySeparatorChar
+          msbuild drivers/KCrashLab.Target/KCrashLab.Target.vcxproj /restore /p:Configuration=Release /p:Platform=x64 /p:KclLabFaults=true "/p:OutDir=$out"
+
+      - name: Prove safe and lab binaries are distinct
+        shell: pwsh
+        run: |
+          $safe = Get-FileHash "$env:RUNNER_TEMP\kcl-safe\KCrashLabTarget.sys" -Algorithm SHA256
+          $lab = Get-FileHash "$env:RUNNER_TEMP\kcl-lab\KCrashLabTarget.sys" -Algorithm SHA256
+          if ($safe.Hash -eq $lab.Hash) { throw 'Safe and lab driver hashes unexpectedly match.' }
+          "safe_sha256=$($safe.Hash.ToLowerInvariant())" | Out-File $env:GITHUB_STEP_SUMMARY -Append
+          "lab_sha256=$($lab.Hash.ToLowerInvariant())" | Out-File $env:GITHUB_STEP_SUMMARY -Append
+
+      - name: Upload driver build logs only
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: track-b-build-logs
+          path: |
+            drivers/KCrashLab.Target/**/*.log
+            drivers/KCrashLab.Target/**/*.wrn
+            drivers/KCrashLab.Target/**/*.err
+          if-no-files-found: warn
+          retention-days: 7

@@ -1,0 +1,13 @@
+Microsoft (R) Windows Debugger Version 10.0
+BugCheck E2C1A501, {40, 4, 2, 0}
+
+MODULE_NAME: KCrashLabTarget
+IMAGE_NAME:  KCrashLabTarget.sys
+
+STACK_TEXT:
+fffff800`00000001 fffff800`00000002 : 00000000`e2c1a501 00000000`00000040 00000000`00000004 00000000`00000002 : nt!KeBugCheckEx
+fffff800`00000003 fffff800`00000004 : KCrashLabTarget!KclEvtIoDeviceControl+0x91
+fffff800`00000005 fffff800`00000006 : Wdf01000!FxIoQueue::DispatchRequestToDriver+0x1a
+fffff800`00000007 fffff800`00000008 : nt!IofCallDriver+0x55
+
+FAILURE_BUCKET_ID: 0xE2C1A501_KCrashLabTarget!KclEvtIoDeviceControl
