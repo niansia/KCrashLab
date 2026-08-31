@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "name": "complete",
+  "execution_mode": "SIMULATED",
+  "boot_id": "sim-boot-0001",
+  "seed": 1,
+  "events": [
+    { "kind": "READY", "at_ms": 0 },
+    { "kind": "RUNNING", "at_ms": 10 },
+    { "kind": "CASE_DONE", "at_ms": 20 }
+  ],
+  "expected_result_class": "COMPLETE"
+}
+

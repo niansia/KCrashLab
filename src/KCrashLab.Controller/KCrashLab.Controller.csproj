@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\KCrashLab.Contracts\KCrashLab.Contracts.csproj" />
+    <ProjectReference Include="..\KCrashLab.Domain\KCrashLab.Domain.csproj" />
+    <ProjectReference Include="..\KCrashLab.Storage\KCrashLab.Storage.csproj" />
+  </ItemGroup>
+</Project>
+

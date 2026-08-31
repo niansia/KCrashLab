@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "name": "flaky-signature",
+  "execution_mode": "SIMULATED",
+  "boot_id": "sim-boot-0009",
+  "seed": 9,
+  "events": [
+    { "kind": "READY", "at_ms": 0 },
+    { "kind": "RUNNING", "at_ms": 10 },
+    { "kind": "FLAKY_SIGNATURE", "at_ms": 60, "failure_id": "synthetic-flaky", "detail": "fixture replay schedule determines match" },
+    { "kind": "ARTIFACT_STABLE", "at_ms": 100, "failure_id": "synthetic-flaky", "artifact_length": 306 }
+  ],
+  "artifact": {
+    "relative_name": "crash/windbg.raw.txt",
+    "utf8_content": "KCRASHLAB_FIXTURE_VERSION: 1\nEXECUTION_MODE: SIMULATED\nBUGCHECK_CODE: 0x000000d1\nBUGCHECK_P1: 0x00000000\nFAULTING_MODULE: kclsynthetic_race\nVERIFIER_RULE_ID: NONE\nSTACK:\nkclsynthetic_race!Complete+0x20\nkclsynthetic_race!Cancel+0x15\nkclsim!Worker+0x12\nkclsim!RunCase+0x8\nkclcontroller!Execute+0x4\nEND_STACK\n",
+    "sha256": "de66ef926af96fa603e1129b30cc34bff21177b9f406d2682b2b2c80461242e3",
+    "corrupt_hash": false
+  },
+  "expected_result_class": "SYNTHETIC_FAILURE"
+}

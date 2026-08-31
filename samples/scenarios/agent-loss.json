@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "name": "agent-loss",
+  "execution_mode": "SIMULATED",
+  "boot_id": "sim-boot-0003",
+  "seed": 3,
+  "events": [
+    { "kind": "READY", "at_ms": 0 },
+    { "kind": "RUNNING", "at_ms": 10 },
+    { "kind": "HEARTBEAT", "at_ms": 20 },
+    { "kind": "AGENT_LOSS", "at_ms": 500, "failure_id": "synthetic-agent-loss" },
+    { "kind": "ARTIFACT_STABLE", "at_ms": 550, "failure_id": "synthetic-agent-loss", "artifact_length": 320 }
+  ],
+  "artifact": {
+    "relative_name": "crash/windbg.raw.txt",
+    "utf8_content": "KCRASHLAB_FIXTURE_VERSION: 1\nEXECUTION_MODE: SIMULATED\nBUGCHECK_CODE: 0x00000133\nBUGCHECK_P1: 0x00000000\nFAULTING_MODULE: kclsynthetic_agent\nVERIFIER_RULE_ID: NONE\nSTACK:\nkclsynthetic_agent!HeartbeatExpired+0x20\nkclsynthetic_agent!Watchdog+0x15\nkclsim!Observe+0x12\nkclsim!RunCase+0x8\nkclcontroller!Execute+0x4\nEND_STACK\n",
+    "sha256": "18f06f084dc93e8828b09b6e32f612c1ab4786230b9e4925977563e777755ea2",
+    "corrupt_hash": false
+  },
+  "expected_result_class": "AGENT_LOSS"
+}

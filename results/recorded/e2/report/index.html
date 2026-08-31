@@ -1,0 +1,10 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KCrashLab E2 simulated stateful experiment</title><style>
+body{font-family:Segoe UI,system-ui,sans-serif;max-width:980px;margin:40px auto;padding:0 20px;color:#17202a;background:#f4f7f9}.banner{background:#8b1e1e;color:#fff;padding:18px 22px;border-radius:8px;font-weight:750;letter-spacing:.04em}main{background:#fff;margin-top:18px;padding:30px;border-radius:8px;box-shadow:0 8px 28px #10203018}table{width:100%;border-collapse:collapse;margin:18px 0}th,td{text-align:left;border-bottom:1px solid #d8e0e5;padding:12px 8px}.muted{color:#5c6975}</style></head>
+<body><div class="banner">SIMULATED — NOT A REAL KERNEL CRASH BENCHMARK</div><main><h1>E2: stateful sequence versus single call</h1>
+<p class="muted">Paired deterministic trials against one synthetic target. The sequence-length cap is the only experimental variable.</p>
+<table><thead><tr><th>Mode</th><th>Maximum operations</th><th>Discoveries</th><th>Censored</th><th>Successful median [Q1, Q3]</th></tr></thead><tbody><tr><td>SINGLE_CALL</td><td>1</td><td>0/20</td><td>20</td><td>n/a [n/a, n/a]</td></tr>
+<tr><td>STATEFUL</td><td>6</td><td>20/20</td><td>0</td><td>149.0 [146.0, 151.3]</td></tr></tbody></table>
+<h2>Paired outcomes</h2><table><thead><tr><th>Both</th><th>Stateful only</th><th>Single-call only</th><th>Neither</th></tr></thead><tbody><tr><td>0</td><td>20</td><td>0</td><td>0</td></tr></tbody></table>
+<p class="muted">The known synthetic signature requires RESET_STATE → SET_MODE(2) → SUBMIT_RECORD(declared length mismatch). Single-call mode cannot express that prerequisite chain. Kernel crashes, real-driver performance, and statistical significance are not claimed.</p>
+</main></body></html>

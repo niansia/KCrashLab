@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kcrashlab.dev/schemas/run.schema.json",
+  "type": "object",
+  "required": ["schema_version", "execution_mode", "run_id", "campaign_id", "case_id", "scenario", "result_class", "virtual_duration_ms"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "execution_mode": { "const": "SIMULATED" },
+    "run_id": { "type": "string", "format": "uuid" },
+    "campaign_id": { "type": "string", "format": "uuid" },
+    "case_id": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "scenario": { "type": "string", "maxLength": 64 },
+    "result_class": { "enum": ["COMPLETE", "OPERATION_TIMEOUT", "AGENT_LOSS", "REBOOT", "SYNTHETIC_FAILURE", "INFRASTRUCTURE_ERROR", "QUARANTINED"] },
+    "virtual_duration_ms": { "type": "integer", "minimum": 0 },
+    "signature": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" }
+  },
+  "additionalProperties": false
+}
+

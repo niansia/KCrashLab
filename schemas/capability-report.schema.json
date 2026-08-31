@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kcrashlab.dev/schemas/capability-report.schema.json",
+  "title": "KCrashLab capability report",
+  "type": "object",
+  "required": ["schema_version", "execution_mode", "observed_at_utc", "host", "capabilities", "real_kernel_campaign", "reasons"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "execution_mode": { "const": "SIMULATED" },
+    "observed_at_utc": { "type": "string", "format": "date-time" },
+    "host": {
+      "type": "object",
+      "required": ["os_description", "os_version", "architecture"],
+      "properties": {
+        "os_description": { "type": "string", "maxLength": 256 },
+        "os_version": { "type": "string", "maxLength": 64 },
+        "architecture": { "type": "string", "maxLength": 32 },
+        "windows_edition": { "type": ["string", "null"], "maxLength": 128 }
+      },
+      "additionalProperties": false
+    },
+    "capabilities": {
+      "type": "object",
+      "required": ["hypervisor", "hyperv_management", "windows_sdk", "wdk_driver_targets", "disposable_kernel_lab"],
+      "properties": {
+        "hypervisor": { "$ref": "#/$defs/status" },
+        "hyperv_management": { "$ref": "#/$defs/status" },
+        "windows_sdk": { "$ref": "#/$defs/status" },
+        "wdk_driver_targets": { "$ref": "#/$defs/status" },
+        "disposable_kernel_lab": { "$ref": "#/$defs/status" }
+      },
+      "additionalProperties": false
+    },
+    "real_kernel_campaign": { "const": "BLOCKED" },
+    "reasons": { "type": "array", "minItems": 1, "items": { "type": "string", "maxLength": 512 } },
+    "evidence": { "type": "object", "additionalProperties": { "type": "string", "maxLength": 1024 } }
+  },
+  "$defs": {
+    "status": { "enum": ["AVAILABLE", "UNAVAILABLE", "UNVERIFIED", "BLOCKED"] }
+  },
+  "additionalProperties": false
+}
+

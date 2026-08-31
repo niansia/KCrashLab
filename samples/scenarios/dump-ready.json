@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "name": "dump-ready",
+  "execution_mode": "SIMULATED",
+  "boot_id": "sim-boot-0006",
+  "seed": 41821,
+  "events": [
+    { "kind": "READY", "at_ms": 0 },
+    { "kind": "RUNNING", "at_ms": 10 },
+    { "kind": "FAILURE_DETECTED", "at_ms": 60, "failure_id": "synthetic-state-bounds" },
+    { "kind": "ARTIFACT_GROWTH", "at_ms": 90, "failure_id": "synthetic-state-bounds", "artifact_length": 128 },
+    { "kind": "ARTIFACT_GROWTH", "at_ms": 120, "failure_id": "synthetic-state-bounds", "artifact_length": 384 },
+    { "kind": "ARTIFACT_STABLE", "at_ms": 180, "failure_id": "synthetic-state-bounds", "artifact_length": 467 }
+  ],
+  "artifact": {
+    "relative_name": "crash/windbg.raw.txt",
+    "utf8_content": "KCRASHLAB_FIXTURE_VERSION: 1\nEXECUTION_MODE: SIMULATED\nBUGCHECK_CODE: 0x000000c4\nBUGCHECK_P1: 0x000000f6\nBUGCHECK_P2: 0x00000000\nBUGCHECK_P3: 0x00000000\nBUGCHECK_P4: 0x00000000\nFAULTING_MODULE: kclsynthetic\nVERIFIER_RULE_ID: 0x000000f6\nSTACK:\nfffff80000000000 kclsynthetic!SubmitRecord+0x42\nfffff80000000010 kclsynthetic!Dispatch+0x20\nfffff80000000020 kclsim!RunOperation+0x19\nfffff80000000030 kclsim!RunCase+0x11\nfffff80000000040 kclcontroller!Execute+0x8\nEND_STACK\n",
+    "sha256": "b5c41cb20d939584e01c089353f0146642ec12fae00f2ec2178117b42df7e037",
+    "corrupt_hash": false
+  },
+  "expected_result_class": "SYNTHETIC_FAILURE"
+}

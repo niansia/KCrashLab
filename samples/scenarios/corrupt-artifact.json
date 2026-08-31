@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "name": "corrupt-artifact",
+  "execution_mode": "SIMULATED",
+  "boot_id": "sim-boot-0007",
+  "seed": 7,
+  "events": [
+    { "kind": "READY", "at_ms": 0 },
+    { "kind": "RUNNING", "at_ms": 10 },
+    { "kind": "FAILURE_DETECTED", "at_ms": 50, "failure_id": "synthetic-corrupt" },
+    { "kind": "CORRUPT_ARTIFACT", "at_ms": 80, "failure_id": "synthetic-corrupt" },
+    { "kind": "ARTIFACT_STABLE", "at_ms": 100, "failure_id": "synthetic-corrupt", "artifact_length": 165 }
+  ],
+  "artifact": {
+    "relative_name": "crash/windbg.raw.txt",
+    "utf8_content": "KCRASHLAB_FIXTURE_VERSION: 1\nEXECUTION_MODE: SIMULATED\nBUGCHECK_CODE: 0x000000c4\nFAULTING_MODULE: kclsynthetic_corrupt\nSTACK:\nkclsynthetic_corrupt!Collect\nEND_STACK\n",
+    "sha256": "84e3b8563a75b5924abe4a0178c0c186e6751b6c18323b2c94c8a1d8cbe726d6",
+    "corrupt_hash": true
+  },
+  "expected_result_class": "QUARANTINED"
+}

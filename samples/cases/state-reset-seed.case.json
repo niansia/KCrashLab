@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "target": "kcl.state",
+  "seed": 41821,
+  "operations": [
+    { "ioctl": "RESET_STATE", "input": "" }
+  ],
+  "schedule": { "workers": 1, "delays_us": [0] }
+}

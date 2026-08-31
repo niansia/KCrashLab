@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>kcrash</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\KCrashLab.Contracts\KCrashLab.Contracts.csproj" />
+    <ProjectReference Include="..\KCrashLab.Controller\KCrashLab.Controller.csproj" />
+    <ProjectReference Include="..\KCrashLab.Domain\KCrashLab.Domain.csproj" />
+    <ProjectReference Include="..\KCrashLab.Simulation\KCrashLab.Simulation.csproj" />
+    <ProjectReference Include="..\KCrashLab.Storage\KCrashLab.Storage.csproj" />
+  </ItemGroup>
+</Project>
+

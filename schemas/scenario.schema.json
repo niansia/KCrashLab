@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kcrashlab.dev/schemas/scenario.schema.json",
+  "type": "object",
+  "required": ["schema_version", "name", "execution_mode", "boot_id", "seed", "events", "expected_result_class"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "name": { "type": "string", "pattern": "^[a-z0-9-]{1,64}$" },
+    "execution_mode": { "const": "SIMULATED" },
+    "boot_id": { "type": "string", "maxLength": 128 },
+    "seed": { "type": "integer", "minimum": 0 },
+    "events": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "items": {
+        "type": "object",
+        "required": ["kind", "at_ms"],
+        "properties": {
+          "kind": { "enum": ["READY", "RUNNING", "HEARTBEAT", "CASE_DONE", "OPERATION_TIMEOUT", "AGENT_LOSS", "BOOT_ID_CHANGED", "FAILURE_DETECTED", "ARTIFACT_GROWTH", "ARTIFACT_STABLE", "CORRUPT_ARTIFACT", "INFRASTRUCTURE_FAILURE", "FLAKY_SIGNATURE"] },
+          "at_ms": { "type": "integer", "minimum": 0 },
+          "detail": { "type": ["string", "null"], "maxLength": 1024 },
+          "failure_id": { "type": ["string", "null"], "maxLength": 128 },
+          "artifact_length": { "type": ["integer", "null"], "minimum": 0 },
+          "expected_sha256": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "artifact": {
+      "type": ["object", "null"],
+      "required": ["relative_name", "utf8_content", "sha256", "corrupt_hash"],
+      "properties": {
+        "relative_name": { "type": "string", "maxLength": 256 },
+        "utf8_content": { "type": "string", "maxLength": 1048576 },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "corrupt_hash": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "expected_result_class": { "type": "string", "maxLength": 64 }
+  },
+  "additionalProperties": false
+}
+

@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "name": "reboot",
+  "execution_mode": "SIMULATED",
+  "boot_id": "sim-boot-0004",
+  "seed": 4,
+  "events": [
+    { "kind": "READY", "at_ms": 0 },
+    { "kind": "RUNNING", "at_ms": 10 },
+    { "kind": "BOOT_ID_CHANGED", "at_ms": 80, "detail": "sim-boot-0004 to sim-boot-0005", "failure_id": "synthetic-reboot" },
+    { "kind": "ARTIFACT_STABLE", "at_ms": 140, "failure_id": "synthetic-reboot", "artifact_length": 318 }
+  ],
+  "artifact": {
+    "relative_name": "crash/windbg.raw.txt",
+    "utf8_content": "KCRASHLAB_FIXTURE_VERSION: 1\nEXECUTION_MODE: SIMULATED\nBUGCHECK_CODE: 0x000000ef\nBUGCHECK_P1: 0x00000000\nFAULTING_MODULE: kclsynthetic_reboot\nVERIFIER_RULE_ID: NONE\nSTACK:\nkclsynthetic_reboot!ResetTarget+0x20\nkclsynthetic_reboot!Dispatch+0x15\nkclsim!Observe+0x12\nkclsim!RunCase+0x8\nkclcontroller!Execute+0x4\nEND_STACK\n",
+    "sha256": "b37d69ec3e088302bb399f78d39fe9541a142e4aa06061426b62d0fe8036615c",
+    "corrupt_hash": false
+  },
+  "expected_result_class": "REBOOT"
+}

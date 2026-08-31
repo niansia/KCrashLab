@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "name": "infra-failure",
+  "execution_mode": "SIMULATED",
+  "boot_id": "sim-boot-0008",
+  "seed": 8,
+  "events": [
+    { "kind": "READY", "at_ms": 0 },
+    { "kind": "RUNNING", "at_ms": 10 },
+    { "kind": "INFRASTRUCTURE_FAILURE", "at_ms": 40, "detail": "scripted channel failure" }
+  ],
+  "expected_result_class": "INFRASTRUCTURE_ERROR"
+}
+

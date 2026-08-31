@@ -1,0 +1,56 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KCrashLab.Contracts", "src\KCrashLab.Contracts\KCrashLab.Contracts.csproj", "{E73BD6BE-C29F-41C3-9182-93DE91386C89}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KCrashLab.Domain", "src\KCrashLab.Domain\KCrashLab.Domain.csproj", "{B592896D-C740-4FD2-B197-10B28A624D69}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KCrashLab.Storage", "src\KCrashLab.Storage\KCrashLab.Storage.csproj", "{C9981D29-8B5A-491C-B8F0-9DC3F203BD07}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KCrashLab.Simulation", "src\KCrashLab.Simulation\KCrashLab.Simulation.csproj", "{11820AB1-ED57-4C24-9C64-2982C44B6BA2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KCrashLab.Controller", "src\KCrashLab.Controller\KCrashLab.Controller.csproj", "{588B33DB-83FD-409E-9CD8-3645A740A85E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KCrashLab.Cli", "src\KCrashLab.Cli\KCrashLab.Cli.csproj", "{11190E05-0B4F-4C98-A432-B5EB00D9BECA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KCrashLab.Tests", "tests\KCrashLab.Tests\KCrashLab.Tests.csproj", "{5574D5A1-A2FD-4B25-9879-B4001C69BABB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E73BD6BE-C29F-41C3-9182-93DE91386C89}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E73BD6BE-C29F-41C3-9182-93DE91386C89}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E73BD6BE-C29F-41C3-9182-93DE91386C89}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E73BD6BE-C29F-41C3-9182-93DE91386C89}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B592896D-C740-4FD2-B197-10B28A624D69}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B592896D-C740-4FD2-B197-10B28A624D69}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B592896D-C740-4FD2-B197-10B28A624D69}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B592896D-C740-4FD2-B197-10B28A624D69}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C9981D29-8B5A-491C-B8F0-9DC3F203BD07}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C9981D29-8B5A-491C-B8F0-9DC3F203BD07}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C9981D29-8B5A-491C-B8F0-9DC3F203BD07}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C9981D29-8B5A-491C-B8F0-9DC3F203BD07}.Release|Any CPU.Build.0 = Release|Any CPU
+		{11820AB1-ED57-4C24-9C64-2982C44B6BA2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{11820AB1-ED57-4C24-9C64-2982C44B6BA2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{11820AB1-ED57-4C24-9C64-2982C44B6BA2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{11820AB1-ED57-4C24-9C64-2982C44B6BA2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{588B33DB-83FD-409E-9CD8-3645A740A85E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{588B33DB-83FD-409E-9CD8-3645A740A85E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{588B33DB-83FD-409E-9CD8-3645A740A85E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{588B33DB-83FD-409E-9CD8-3645A740A85E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{11190E05-0B4F-4C98-A432-B5EB00D9BECA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{11190E05-0B4F-4C98-A432-B5EB00D9BECA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{11190E05-0B4F-4C98-A432-B5EB00D9BECA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{11190E05-0B4F-4C98-A432-B5EB00D9BECA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5574D5A1-A2FD-4B25-9879-B4001C69BABB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5574D5A1-A2FD-4B25-9879-B4001C69BABB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5574D5A1-A2FD-4B25-9879-B4001C69BABB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5574D5A1-A2FD-4B25-9879-B4001C69BABB}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
+

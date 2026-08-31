@@ -1,0 +1,76 @@
+name: simulation-ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  safe-simulation:
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+          cache: true
+          cache-dependency-path: Directory.Packages.props
+
+      - name: Restore
+        run: dotnet restore KCrashLab.sln
+
+      - name: Build
+        run: dotnet build KCrashLab.sln --configuration Release --no-restore
+
+      - name: Audit dependencies
+        run: dotnet list KCrashLab.sln package --vulnerable --include-transitive
+
+      - name: Test simulation contracts
+        run: dotnet test KCrashLab.sln --configuration Release --no-build --logger "trx;LogFileName=simulation.trx"
+
+      - name: Run safe end-to-end demo
+        run: dotnet run --project src/KCrashLab.Cli --configuration Release --no-build -- campaign run --scenario dump-ready --case samples/cases/state-original.case.json --output artifacts/ci-demo
+
+      - name: Verify generated evidence
+        run: dotnet run --project src/KCrashLab.Cli --configuration Release --no-build -- evidence verify artifacts/ci-demo/finding
+
+      - name: Run deterministic simulated fuzz discovery
+        run: dotnet run --project src/KCrashLab.Cli --configuration Release --no-build -- fuzz run --seed samples/cases/state-safe-seed.case.json --budget 256 --campaign-seed 20260831 --output artifacts/ci-fuzz
+
+      - name: Verify fuzz campaign artifacts
+        run: dotnet run --project src/KCrashLab.Cli --configuration Release --no-build -- fuzz verify artifacts/ci-fuzz
+
+      - name: Run paired synthetic E1 smoke experiment
+        run: dotnet run --project src/KCrashLab.Cli --configuration Release --no-build -- experiment e1 --seed samples/cases/state-safe-seed.case.json --budget 128 --trials 4 --base-seed 20260831 --output artifacts/ci-e1
+
+      - name: Verify E1 experiment artifacts
+        run: dotnet run --project src/KCrashLab.Cli --configuration Release --no-build -- experiment verify artifacts/ci-e1
+
+      - name: Run paired synthetic E2 smoke experiment
+        run: dotnet run --project src/KCrashLab.Cli --configuration Release --no-build -- experiment e2 --seed samples/cases/state-reset-seed.case.json --budget 256 --trials 4 --base-seed 20260831 --output artifacts/ci-e2
+
+      - name: Verify E2 experiment artifacts
+        run: dotnet run --project src/KCrashLab.Cli --configuration Release --no-build -- experiment verify artifacts/ci-e2
+
+      - name: Build clean reviewer source package
+        shell: pwsh
+        run: ./scripts/package.ps1 -OutputPath artifacts/KCrashLab-source.zip
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: simulation-test-results
+          path: |
+            **/TestResults/*.trx
+            artifacts/ci-demo/finding
+            artifacts/ci-fuzz
+            artifacts/ci-e1
+            artifacts/ci-e2
+            artifacts/KCrashLab-source.zip
+          if-no-files-found: warn
+          retention-days: 7

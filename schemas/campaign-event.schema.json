@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kcrashlab.dev/schemas/campaign-event.schema.json",
+  "type": "object",
+  "required": ["schema_version", "event_id", "campaign_id", "sequence", "from_state", "to_state", "reason", "actor", "occurred_utc", "virtual_elapsed_ms", "correlation_id"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "event_id": { "type": "string", "format": "uuid" },
+    "campaign_id": { "type": "string", "format": "uuid" },
+    "sequence": { "type": "integer", "minimum": 1 },
+    "from_state": { "type": "string", "maxLength": 64 },
+    "to_state": { "type": "string", "maxLength": 64 },
+    "reason": { "type": "string", "maxLength": 1024 },
+    "actor": { "type": "string", "maxLength": 128 },
+    "occurred_utc": { "type": "string", "format": "date-time" },
+    "virtual_elapsed_ms": { "type": "integer", "minimum": 0 },
+    "correlation_id": { "type": "string", "format": "uuid" }
+  },
+  "additionalProperties": false
+}
+

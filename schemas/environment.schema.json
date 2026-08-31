@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kcrashlab.dev/schemas/environment.schema.json",
+  "type": "object",
+  "required": ["schema_version", "execution_mode", "backend", "simulator_version", "capability_report"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "execution_mode": { "const": "SIMULATED" },
+    "backend": { "const": "simulated" },
+    "simulator_version": { "type": "string", "maxLength": 64 },
+    "capability_report": { "$ref": "capability-report.schema.json" }
+  },
+  "additionalProperties": false
+}
+

@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "name": "operation-timeout",
+  "execution_mode": "SIMULATED",
+  "boot_id": "sim-boot-0002",
+  "seed": 2,
+  "events": [
+    { "kind": "READY", "at_ms": 0 },
+    { "kind": "RUNNING", "at_ms": 10 },
+    { "kind": "HEARTBEAT", "at_ms": 50 },
+    { "kind": "OPERATION_TIMEOUT", "at_ms": 100, "detail": "agent heartbeat remains healthy", "failure_id": "synthetic-op-timeout" },
+    { "kind": "ARTIFACT_STABLE", "at_ms": 120, "failure_id": "synthetic-op-timeout", "artifact_length": 332 }
+  ],
+  "artifact": {
+    "relative_name": "crash/windbg.raw.txt",
+    "utf8_content": "KCRASHLAB_FIXTURE_VERSION: 1\nEXECUTION_MODE: SIMULATED\nBUGCHECK_CODE: 0x00000101\nBUGCHECK_P1: 0x00000001\nFAULTING_MODULE: kclsynthetic_timeout\nVERIFIER_RULE_ID: NONE\nSTACK:\nkclsynthetic_timeout!WaitForCompletion+0x20\nkclsynthetic_timeout!Dispatch+0x15\nkclsim!RunOperation+0x12\nkclsim!RunCase+0x8\nkclcontroller!Execute+0x4\nEND_STACK\n",
+    "sha256": "ebf278751e1d25319fe83cc91dea7f58c097d102bc60b35e3bf67846fea1d269",
+    "corrupt_hash": false
+  },
+  "expected_result_class": "OPERATION_TIMEOUT"
+}

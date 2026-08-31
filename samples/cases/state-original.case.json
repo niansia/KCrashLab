@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "target": "kcl.state",
+  "seed": 41821,
+  "operations": [
+    { "ioctl": "QUERY_STATS" },
+    { "ioctl": "RESET_STATE", "input": "" },
+    { "ioctl": "QUERY_STATS" },
+    { "ioctl": "QUERY_STATS" },
+    { "ioctl": "SET_MODE", "fields": { "mode": 2 } },
+    { "ioctl": "QUERY_STATS" },
+    { "ioctl": "TRIGGER_ASYNC" },
+    { "ioctl": "QUERY_STATS" },
+    { "ioctl": "QUERY_STATS" },
+    { "ioctl": "SUBMIT_RECORD", "fields": { "declared_len": 64, "payload": "AAAA" } },
+    { "ioctl": "QUERY_STATS" },
+    { "ioctl": "QUERY_STATS" },
+    { "ioctl": "TRIGGER_ASYNC" },
+    { "ioctl": "QUERY_STATS" }
+  ],
+  "schedule": { "workers": 1, "delays_us": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }
+}
+

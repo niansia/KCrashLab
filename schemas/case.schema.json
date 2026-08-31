@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kcrashlab.dev/schemas/case.schema.json",
+  "title": "KCrashLab case IR",
+  "type": "object",
+  "required": ["schema_version", "target", "seed", "operations"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "target": { "type": "string", "pattern": "^kcl\\.(bounds|integer|race|state|lifetime)$", "maxLength": 64 },
+    "seed": { "type": "integer", "minimum": 0, "maximum": 9223372036854775807 },
+    "parent_case_id": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+    "mutation": {
+      "type": ["object", "null"],
+      "required": ["operator_id", "parameters"],
+      "properties": {
+        "operator_id": { "type": "string", "maxLength": 64 },
+        "parameters": { "type": "object", "maxProperties": 32 }
+      },
+      "additionalProperties": false
+    },
+    "operations": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "required": ["ioctl"],
+        "properties": {
+          "ioctl": { "enum": ["RESET_STATE", "SET_MODE", "SUBMIT_RECORD", "QUERY_STATS", "TRIGGER_ASYNC"] },
+          "input": { "type": "string", "maxLength": 65536 },
+          "fields": { "type": "object", "maxProperties": 32 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "schedule": {
+      "type": "object",
+      "properties": {
+        "workers": { "type": "integer", "minimum": 1, "maximum": 16 },
+        "delays_us": { "type": "array", "maxItems": 64, "items": { "type": "integer", "minimum": 0, "maximum": 10000000 } }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
+

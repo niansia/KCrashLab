@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KCrashLab simulated fuzz campaign</title>
+  <style>
+    body{font-family:Segoe UI,system-ui,sans-serif;max-width:980px;margin:40px auto;padding:0 20px;color:#17202a;background:#f4f7f9}
+    .banner{background:#8b1e1e;color:#fff;padding:18px 22px;border-radius:8px;font-weight:750;letter-spacing:.04em}
+    main{background:#fff;margin-top:18px;padding:30px;border-radius:8px;box-shadow:0 8px 28px #10203018}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}.metric{background:#eef3f6;padding:16px;border-radius:6px}
+    .metric strong{display:block;font-size:1.8rem}.muted{color:#5c6975}code{overflow-wrap:anywhere}
+  </style>
+</head>
+<body>
+  <div class="banner">SIMULATED — NOT A REAL KERNEL CRASH</div>
+  <main>
+    <h1>Novelty-guided fuzz campaign</h1>
+    <p class="muted">Deterministic synthetic target research output. Kernel crash, root cause, and exploitability are not claimed.</p>
+    <section class="grid">
+      <div class="metric"><strong>256</strong>executions</div>
+      <div class="metric"><strong>149</strong>corpus cases</div>
+      <div class="metric"><strong>70</strong>coverage elements</div>
+      <div class="metric"><strong>110</strong>raw synthetic failures</div>
+      <div class="metric"><strong>1</strong>exact signatures</div>
+    </section>
+    <h2>First finding</h2>
+    <p><code>Execution 47: c16b0923faeafce6e8196416e81c29d76ea01fa379e562fa7c785b373f6cf1db</code></p>
+    <h2>Reproducibility inputs</h2>
+    <p>Strategy: <code>NOVELTY_GUIDED_DETERMINISTIC_V1</code><br>Campaign seed: <code>20260831</code><br>Seed case: <code>18e1be2d985316a623355afa5a9a8854d8b9361ec07eb878a51aeac302a0148a</code></p>
+  </main>
+</body>
+</html>

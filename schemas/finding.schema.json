@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kcrashlab.dev/schemas/finding.schema.json",
+  "type": "object",
+  "required": ["schema_version", "execution_mode", "finding_id", "signature_version", "signature", "case_id", "scenario", "classification", "claims", "evidence_coverage"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "execution_mode": { "const": "SIMULATED" },
+    "finding_id": { "type": "string", "format": "uuid" },
+    "signature_version": { "const": 1 },
+    "signature": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "case_id": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "scenario": { "type": "string", "maxLength": 64 },
+    "classification": { "enum": ["SYNTHETIC_CONFIRMED", "SYNTHETIC_FLAKY", "INFRASTRUCTURE_ERROR", "UNTRIAGED"] },
+    "claims": {
+      "type": "object",
+      "required": ["kernel_crash", "root_cause", "exploitability"],
+      "properties": {
+        "kernel_crash": { "const": "NOT_CLAIMED" },
+        "root_cause": { "const": "NOT_CLAIMED" },
+        "exploitability": { "const": "NOT_ASSESSED" }
+      },
+      "additionalProperties": false
+    },
+    "evidence_coverage": { "type": "object", "additionalProperties": { "enum": ["VERIFIED", "VERIFIED_BY_HASH", "SYNTHETIC_FIXTURE", "NOT_APPLICABLE", "NOT_CLAIMED", "NOT_ASSESSED", "UNKNOWN"] } }
+  },
+  "additionalProperties": false
+}
+

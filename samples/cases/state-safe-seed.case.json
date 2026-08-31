@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "target": "kcl.state",
+  "seed": 1001,
+  "operations": [
+    { "ioctl": "RESET_STATE", "input": "" },
+    { "ioctl": "SET_MODE", "fields": { "mode": 0 } },
+    { "ioctl": "SUBMIT_RECORD", "fields": { "declared_len": 4, "payload": "AAAA" } }
+  ],
+  "schedule": { "workers": 1, "delays_us": [0, 0, 0] }
+}
+
