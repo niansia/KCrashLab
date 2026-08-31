@@ -1,0 +1,65 @@
+{
+  "schema_version": 2,
+  "execution_mode": "SIMULATED",
+  "status": "SYNTHETIC_CONFIRMED",
+  "provenance": {
+    "recorded_at_utc": "2026-08-31T17:17:21.0000000\u002B00:00",
+    "source_commit_time_utc": "2026-08-31T17:17:21.0000000\u002B00:00",
+    "reproducible_timestamp_policy": "SOURCE_COMMIT_TIME",
+    "git_commit": "55c31b25902157cddc9014bb9fdaa598bede40a2",
+    "source_tree_digest": "bc0d06a2759e2429b0fec5683f3102e4644628f30b3fe6032a21a233d1333338",
+    "source_tree_digest_algorithm": "GIT_TREE_SHA256_V1",
+    "experiment_definition_digest": "de180552b56437302746a47ca39400025be2b3356b6104949f6b1b2e136d572b",
+    "case_schema_version": 1,
+    "engine_version": "1.4.0-sim",
+    "scenario": "dump-ready",
+    "scenario_fixture_schema_version": 1,
+    "scenario_fixture_digest_algorithm": "SCENARIO_JSON_SHA256_V1",
+    "scenario_fixture_digest": "5adccac3bcd7956b18b87c8d73c5202334176bae32c10175ebd05f5d5fa6c746",
+    "campaign_seed": 41821,
+    "maximum_oracle_attempts": 128,
+    "minimizer_definition_digest": "bb04f25e503c23035b31541cd605c3a608fb5f25b01420ad90eb1d5ecc68c350",
+    "replay_policy_definition_digest": "393f0f8a7359ec086cedbb09637bb45e0cda11dc9881132428b5244d25dcca61"
+  },
+  "replay": {
+    "policy": {
+      "attempts": 3,
+      "required_matches": 3
+    },
+    "attempts": [
+      {
+        "attempt": 1,
+        "classification": "MATCH",
+        "observed_signature": "c16b0923faeafce6e8196416e81c29d76ea01fa379e562fa7c785b373f6cf1db"
+      },
+      {
+        "attempt": 2,
+        "classification": "MATCH",
+        "observed_signature": "c16b0923faeafce6e8196416e81c29d76ea01fa379e562fa7c785b373f6cf1db"
+      },
+      {
+        "attempt": 3,
+        "classification": "MATCH",
+        "observed_signature": "c16b0923faeafce6e8196416e81c29d76ea01fa379e562fa7c785b373f6cf1db"
+      }
+    ],
+    "eligible_attempts": 3,
+    "matching_attempts": 3,
+    "passed": true
+  },
+  "minimization": {
+    "original_operations": 14,
+    "minimized_operations": 3,
+    "operation_reduction": 0.7857142857142857,
+    "original_bytes": 552,
+    "minimized_bytes": 188,
+    "byte_reduction": 0.6594202898550725,
+    "maximum_oracle_attempts": 128,
+    "oracle_attempts": 53,
+    "stop_reason": "LOCAL_MINIMUM_HIERARCHICAL_V1"
+  },
+  "limitations": [
+    "This is a simulator result, not a real kernel crash.",
+    "No memory dump, symbols, driver binary, or exploitability assessment exists."
+  ]
+}

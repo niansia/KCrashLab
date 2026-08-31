@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "execution_mode": "SIMULATED",
+  "run_id": "baefe0ce-5fe4-563c-9461-7c6bbbea81a4",
+  "campaign_id": "3d83526b-036c-505c-a18a-ef76ae88b6ec",
+  "case_id": "13d026745303bb94e23d8ecb6957ba7da950c4462a90569c58088e6db62ace18",
+  "scenario": "dump-ready",
+  "result_class": "SYNTHETIC_FAILURE",
+  "virtual_duration_ms": 180,
+  "signature": "c16b0923faeafce6e8196416e81c29d76ea01fa379e562fa7c785b373f6cf1db"
+}

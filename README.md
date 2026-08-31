@@ -26,6 +26,35 @@ The default workflow runs entirely in user mode against a synthetic state machin
 
 `✅` means implemented in the public simulation path. `🧪` means source is available for review but runtime evidence is absent. `—` means intentionally unsupported.
 
+## Evidence workflow
+
+```mermaid
+flowchart LR
+    caseIr["1 · Case IR<br/>canonical identity"]
+    simulate["2 · Deterministic simulation<br/>scheduler + semantic feedback"]
+    finding["3 · Finding closure<br/>exact signature + minimize + replay"]
+    evidence["4 · Evidence closure<br/>provenance + manifest + verifier"]
+
+    caseIr --> simulate --> finding --> evidence
+
+    windowsLab["Separate Track B<br/>explicitly gated Windows lab"]
+    caseIr -. manual gate · never automatic .-> windowsLab
+
+    classDef input fill:#e8f5e9,stroke:#2e7d32,color:#102a13;
+    classDef process fill:#e3f2fd,stroke:#1565c0,color:#0d2740;
+    classDef result fill:#fff3e0,stroke:#ef6c00,color:#3d2200;
+    classDef evidence fill:#ede7f6,stroke:#6a1b9a,color:#25102f;
+    classDef gated fill:#f5f5f5,stroke:#616161,color:#212121,stroke-dasharray:5 5;
+
+    class caseIr input;
+    class simulate process;
+    class finding result;
+    class evidence evidence;
+    class windowsLab gated;
+```
+
+Solid arrows show the ordinary user-mode workflow. The dashed branch is separately gated and is never selected automatically. See the recorded [G3 discovery](docs/experiments/G3-fuzz-discovery.md), [M1 minimization and 3/3 replay](docs/experiments/M1-minimization-replay.md), and the [research claims ledger](docs/research-claims.md) for the evidence behind this flow.
+
 ## Why this project exists
 
 Finding a failure is only the beginning. A credible research workflow must also answer:
@@ -38,19 +67,6 @@ Finding a failure is only the beginning. A credible research workflow must also 
 6. Are simulated observations clearly separated from real-machine observations?
 
 KCrashLab turns those questions into explicit contracts, tests, artifacts, and failure-closed gates.
-
-## System overview
-
-```text
-environment probe
-    → canonical Case IR
-    → deterministic mutation and scheduling
-    → semantic observation and corpus admission
-    → exact signature and finding deduplication
-    → minimization and replay voting
-    → evidence bundle and manifest
-    → offline structural + semantic verification
-```
 
 The controller communicates through `ILabBackend`. The simulation backend is the only backend available to ordinary campaigns. The Windows-lab path has a separate entry point, private profile, explicit confirmation boundary, fixed repository target, and clean-checkpoint replay policy.
 
@@ -156,9 +172,14 @@ Reviewer-facing synthetic artifacts are stored under:
 
 - [`results/recorded/g3`](results/recorded/g3) — deterministic discovery;
 - [`results/recorded/e1`](results/recorded/e1) — policy ablation;
-- [`results/recorded/e2`](results/recorded/e2) — stateful versus single-call experiment.
+- [`results/recorded/e2`](results/recorded/e2) — stateful versus single-call experiment;
+- [`results/recorded/minimization-replay`](results/recorded/minimization-replay) — exact-signature minimization and 3/3 simulated replay evidence ([record](docs/experiments/M1-minimization-replay.md)).
 
-Local `artifacts/*` directories are disposable outputs and are not authoritative. A recorded result is accepted only after generation from a clean commit, semantic verification, and an independent deterministic rerun with a matching manifest. Provenance records the source revision, source-tree digest, Case IR version, engine version, experiment-definition digest, and timestamp policy.
+Local `artifacts/*` directories are disposable outputs and are not authoritative. A recorded result is accepted only after generation from a clean commit, semantic verification, and an independent deterministic rerun with a matching manifest. Provenance records the source revision, `GIT_TREE_SHA256_V1` digest algorithm and digest, Case IR version, engine version, experiment-definition digest, and timestamp policy.
+
+For experiment commands, `--recorded-at SOURCE_COMMIT_TIME` resolves the full checked-out `HEAD` when `--git-commit` is omitted. Canonical provenance fails closed unless the working tree is clean and the requested commit equals `HEAD`; source identity is calculated from the pinned commit's Git tree and blob objects rather than platform-dependent checkout bytes.
+
+The v0.2 evidence freeze uses two Git layers. Source commit `55c31b25902157cddc9014bb9fdaa598bede40a2` contains the engine, provenance contracts, and tests used to generate the records. The child revision containing `results/recorded/*` is the evidence/release layer, and the release tag should point to that revision. Exact artifact reproduction therefore requires checking out the source commit and writing the rerun below ignored `artifacts/`; running the same command from the evidence commit intentionally records a different `HEAD` and cannot produce the checked-in manifest.
 
 Historical artifacts do not retroactively inherit stronger guarantees from newer code. Read [`docs/status.md`](docs/status.md) before citing a result.
 
