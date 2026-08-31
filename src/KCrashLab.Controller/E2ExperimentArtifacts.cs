@@ -75,8 +75,8 @@ public static class E2ExperimentArtifacts
             raw.Append(BuildRawRow(trial, result.BudgetPerTrial)).Append('\n');
         }
 
-        await WriteBytesAsync(Path.Combine(root, "raw.csv"), Encoding.UTF8.GetBytes(raw.ToString()), cancellationToken).ConfigureAwait(false);
-        await WriteBytesAsync(Path.Combine(root, "report", "index.html"), Encoding.UTF8.GetBytes(BuildReport(result)), cancellationToken).ConfigureAwait(false);
+        await WriteBytesAsync(Path.Combine(root, "raw.csv"), ArtifactText.Encode(raw.ToString()), cancellationToken).ConfigureAwait(false);
+        await WriteBytesAsync(Path.Combine(root, "report", "index.html"), ArtifactText.Encode(BuildReport(result)), cancellationToken).ConfigureAwait(false);
         var entries = await EvidenceManifest.CreateAsync(root, cancellationToken).ConfigureAwait(false);
         return new E2ArtifactBuildResult(root, entries.Count);
     }
@@ -241,10 +241,10 @@ public static class E2ExperimentArtifacts
 
     private static string BuildReport(E2ExperimentResult result)
     {
-        var rows = string.Join(Environment.NewLine, result.Modes.Select(mode =>
+        var rows = string.Join("\n", result.Modes.Select(mode =>
             $"<tr><td>{WebUtility.HtmlEncode(mode.Mode)}</td><td>{mode.MaximumSequenceLength}</td><td>{mode.Discoveries}/{mode.Trials}</td><td>{mode.CensoredTrials}</td><td>{FormatNumber(mode.MedianFirstFindingAmongDiscoveries)} [{FormatNumber(mode.FirstFindingQ1AmongDiscoveries)}, {FormatNumber(mode.FirstFindingQ3AmongDiscoveries)}]</td></tr>"));
         var paired = result.PairedOutcomes;
-        return $$"""
+        return FormattableString.Invariant($$"""
             <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
             <title>KCrashLab E2 simulated stateful experiment</title><style>
             body{font-family:Segoe UI,system-ui,sans-serif;max-width:980px;margin:40px auto;padding:0 20px;color:#17202a;background:#f4f7f9}.banner{background:#8b1e1e;color:#fff;padding:18px 22px;border-radius:8px;font-weight:750;letter-spacing:.04em}main{background:#fff;margin-top:18px;padding:30px;border-radius:8px;box-shadow:0 8px 28px #10203018}table{width:100%;border-collapse:collapse;margin:18px 0}th,td{text-align:left;border-bottom:1px solid #d8e0e5;padding:12px 8px}.muted{color:#5c6975}</style></head>
@@ -254,7 +254,7 @@ public static class E2ExperimentArtifacts
             <h2>Paired outcomes</h2><table><thead><tr><th>Both</th><th>Stateful only</th><th>Single-call only</th><th>Neither</th></tr></thead><tbody><tr><td>{{paired.BothDiscovered}}</td><td>{{paired.StatefulOnly}}</td><td>{{paired.SingleCallOnly}}</td><td>{{paired.NeitherDiscovered}}</td></tr></tbody></table>
             <p class="muted">The known synthetic signature requires RESET_STATE → SET_MODE(2) → SUBMIT_RECORD(declared length mismatch). Single-call mode cannot express that prerequisite chain. Kernel crashes, real-driver performance, and statistical significance are not claimed.</p>
             </main></body></html>
-            """;
+            """);
     }
 
     private static string FormatNumber(double? value) => value?.ToString("0.0", CultureInfo.InvariantCulture) ?? "n/a";
@@ -266,7 +266,7 @@ public static class E2ExperimentArtifacts
     }
 
     private static async Task WriteJsonAsync(string path, object value, CancellationToken cancellationToken) =>
-        await WriteBytesAsync(path, JsonSerializer.SerializeToUtf8Bytes(value, ArtifactJson), cancellationToken).ConfigureAwait(false);
+        await WriteBytesAsync(path, ArtifactText.SerializeJson(value, ArtifactJson), cancellationToken).ConfigureAwait(false);
 
     private static async Task WriteBytesAsync(string path, ReadOnlyMemory<byte> bytes, CancellationToken cancellationToken)
     {

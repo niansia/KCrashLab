@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using KCrashLab.Contracts;
 
@@ -10,6 +11,8 @@ public static class CaseCanonicalizer
     public const int MaximumDepth = 16;
     public const int MaximumStringLength = 65_536;
     public const int MaximumOperations = 64;
+
+    private static readonly UTF8Encoding StrictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
     private static readonly HashSet<string> AllowedTargets =
     [
@@ -59,8 +62,17 @@ public static class CaseCanonicalizer
         return new CanonicalCase(value, id, canonical);
     }
 
-    public static CanonicalCase Parse(ReadOnlySpan<byte> utf8Json) =>
-        Parse(System.Text.Encoding.UTF8.GetString(utf8Json));
+    public static CanonicalCase Parse(ReadOnlySpan<byte> utf8Json)
+    {
+        try
+        {
+            return Parse(StrictUtf8.GetString(utf8Json));
+        }
+        catch (DecoderFallbackException exception)
+        {
+            throw new InvalidDataException("Case JSON is not valid UTF-8.", exception);
+        }
+    }
 
     private static void ValidateCase(TestCase value)
     {
@@ -91,7 +103,7 @@ public static class CaseCanonicalizer
                 throw new InvalidDataException($"Operation '{operation.Ioctl}' is not supported.");
             }
 
-            if (operation.Input is { Length: > MaximumStringLength })
+            if (operation.Input is { } input && UnicodeLength(input) > MaximumStringLength)
             {
                 throw new InvalidDataException("Operation input is too large.");
             }
@@ -109,7 +121,7 @@ public static class CaseCanonicalizer
 
         if (value.Mutation is { } mutation)
         {
-            if (mutation.OperatorId.Length > 64)
+            if (UnicodeLength(mutation.OperatorId) > 64)
             {
                 throw new InvalidDataException("mutation.operator_id exceeds 64 characters.");
             }
@@ -157,7 +169,7 @@ public static class CaseCanonicalizer
                             throw new InvalidDataException($"Duplicate JSON property '{property.Name}'.");
                         }
 
-                        if (property.Name.Length > 128)
+                        if (UnicodeLength(property.Name) > 128)
                         {
                             throw new InvalidDataException("JSON property name is too long.");
                         }
@@ -175,7 +187,7 @@ public static class CaseCanonicalizer
 
                 break;
             case JsonValueKind.String:
-                if ((element.GetString()?.Length ?? 0) > MaximumStringLength)
+                if (element.GetString() is { } value && UnicodeLength(value) > MaximumStringLength)
                 {
                     throw new InvalidDataException("JSON string is too long.");
                 }
@@ -190,6 +202,8 @@ public static class CaseCanonicalizer
                 break;
         }
     }
+
+    private static int UnicodeLength(string value) => value.EnumerateRunes().Count();
 
     private static void WriteCanonical(Utf8JsonWriter writer, JsonElement element, bool omitTopLevelLineage = false)
     {

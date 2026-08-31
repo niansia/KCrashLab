@@ -16,7 +16,7 @@ public sealed class EvidenceTests
         {
             var fixture = await ScenarioFixtureLoader.LoadAsync(TestPaths.Sample("scenarios", "dump-ready.json"), CancellationToken.None);
             var original = CaseCanonicalizer.Parse(await File.ReadAllTextAsync(TestPaths.Sample("cases", "state-original.case.json")));
-            var campaignId = DeterministicIdentity.CreateGuid("evidence-test", original.CaseId);
+            var campaignId = DeterministicIdentity.CreateGuid("campaign", fixture.Name, original.CaseId, fixture.Seed);
             var store = new SqliteCampaignEventStore(Path.Combine(temporary, "events.db"));
             await store.InitializeAsync(CancellationToken.None);
             var result = await new CampaignOrchestrator(store, new SimulatedLabBackend(fixture)).RunAsync(
@@ -26,11 +26,12 @@ public sealed class EvidenceTests
                 CancellationToken.None);
             Assert.Equal(CampaignState.Complete, result.State);
 
-            var minimization = await SequenceMinimizer.MinimizeAsync(
+            const int maximumOracleAttempts = 128;
+            var minimization = await HierarchicalMinimizer.MinimizeAsync(
                 original,
                 result.Signature!,
                 static (candidate, _) => Task.FromResult(SyntheticStateTarget.Evaluate(candidate)),
-                128,
+                maximumOracleAttempts,
                 CancellationToken.None);
             var replay = await ReplayEngine.RunAsync(
                 new ReplayPolicy(3, 3),
@@ -38,13 +39,22 @@ public sealed class EvidenceTests
                 result.Signature!,
                 CancellationToken.None);
             var bundle = Path.Combine(temporary, "bundle");
-            await EvidenceBundleBuilder.BuildAsync(bundle, result, original, minimization, replay, CancellationToken.None);
+            var provenance = ExperimentProvenanceBuilder.UnspecifiedForMinimizationReplay(
+                fixture.Name,
+                fixture.Seed,
+                original,
+                result.Signature!,
+                maximumOracleAttempts,
+                replay.Policy);
+            await EvidenceBundleBuilder.BuildAsync(bundle, result, original, minimization, replay, provenance, CancellationToken.None);
 
             var secondBundle = Path.Combine(temporary, "bundle-second");
-            await EvidenceBundleBuilder.BuildAsync(secondBundle, result, original, minimization, replay, CancellationToken.None);
+            await EvidenceBundleBuilder.BuildAsync(secondBundle, result, original, minimization, replay, provenance, CancellationToken.None);
             Assert.Equal(
                 await File.ReadAllTextAsync(Path.Combine(bundle, EvidenceManifest.FileName)),
                 await File.ReadAllTextAsync(Path.Combine(secondBundle, EvidenceManifest.FileName)));
+            TestPaths.AssertLfUtf8NoBom(Path.Combine(bundle, "report", "index.html"));
+            TestPaths.AssertLfUtf8NoBom(Path.Combine(bundle, "decision.json"));
 
             var valid = await EvidenceBundleVerifier.VerifyAsync(bundle, CancellationToken.None);
             Assert.True(valid.IsValid, string.Join(Environment.NewLine, valid.Errors));

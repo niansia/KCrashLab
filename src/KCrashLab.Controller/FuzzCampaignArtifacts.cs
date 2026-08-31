@@ -107,7 +107,7 @@ public static class FuzzCampaignArtifacts
                 .Append(Csv(execution.Signature)).Append('\n');
         }
 
-        await WriteBytesAsync(Path.Combine(root, "metrics.csv"), Encoding.UTF8.GetBytes(metrics.ToString()), cancellationToken).ConfigureAwait(false);
+        await WriteBytesAsync(Path.Combine(root, "metrics.csv"), ArtifactText.Encode(metrics.ToString()), cancellationToken).ConfigureAwait(false);
 
         foreach (var corpusEntry in result.Corpus)
         {
@@ -142,7 +142,7 @@ public static class FuzzCampaignArtifacts
 
         await WriteBytesAsync(
             Path.Combine(root, "report", "index.html"),
-            Encoding.UTF8.GetBytes(BuildReport(result)),
+            ArtifactText.Encode(BuildReport(result)),
             cancellationToken).ConfigureAwait(false);
         var entries = await EvidenceManifest.CreateAsync(root, cancellationToken).ConfigureAwait(false);
         return new FuzzArtifactBuildResult(root, entries.Count, result.Corpus.Count, result.Findings.Count);
@@ -387,7 +387,7 @@ public static class FuzzCampaignArtifacts
         var firstFindingText = firstFinding is null
             ? "No synthetic finding in budget"
             : $"Execution {firstFinding.FirstExecution}: {WebUtility.HtmlEncode(firstFinding.Signature)}";
-        return $$"""
+        return FormattableString.Invariant($$"""
             <!doctype html>
             <html lang="en">
             <head>
@@ -421,7 +421,7 @@ public static class FuzzCampaignArtifacts
               </main>
             </body>
             </html>
-            """;
+            """);
     }
 
     private static string Csv(string? value)
@@ -437,7 +437,7 @@ public static class FuzzCampaignArtifacts
     }
 
     private static Task WriteJsonAsync(string path, object value, CancellationToken cancellationToken) =>
-        WriteBytesAsync(path, JsonSerializer.SerializeToUtf8Bytes(value, ContractJson.Indented), cancellationToken);
+        WriteBytesAsync(path, ArtifactText.SerializeJson(value, ContractJson.Indented), cancellationToken);
 
     private static async Task WriteBytesAsync(
         string path,

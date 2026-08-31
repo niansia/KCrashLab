@@ -28,12 +28,38 @@ public sealed class EvidenceBundleBuilder
         CanonicalCase original,
         MinimizationResult minimization,
         ReplayDecision replay,
+        MinimizationReplayProvenance provenance,
         CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(bundleRoot);
+        ExperimentProvenanceBuilder.ValidateMinimizationReplay(provenance);
         if (campaign.State != CampaignState.Complete || campaign.Artifact is null || campaign.Analysis is null || campaign.Signature is null)
         {
             throw new InvalidOperationException("Only completed simulated findings can produce an evidence bundle.");
+        }
+
+        var expectedCampaignId = DeterministicIdentity.CreateGuid("campaign", provenance.Scenario, original.CaseId, provenance.CampaignSeed);
+        var expectedExperimentDigest = ExperimentProvenanceBuilder.M1ExperimentDefinitionDigest(
+            provenance.Scenario,
+            provenance.CampaignSeed,
+            original.CaseId,
+            campaign.Signature,
+            provenance.MaximumOracleAttempts,
+            replay.Policy,
+            original.Value.SchemaVersion);
+        var expectedMinimizerDigest = ExperimentProvenanceBuilder.M1MinimizerDefinitionDigest(
+            original.CaseId,
+            campaign.Signature,
+            provenance.MaximumOracleAttempts,
+            original.Value.SchemaVersion);
+        var expectedReplayDigest = ExperimentProvenanceBuilder.M1ReplayPolicyDefinitionDigest(campaign.Signature, replay.Policy);
+        if (campaign.CampaignId != expectedCampaignId
+            || !string.Equals(campaign.Scenario, provenance.Scenario, StringComparison.Ordinal)
+            || !string.Equals(provenance.ExperimentDefinitionDigest, expectedExperimentDigest, StringComparison.Ordinal)
+            || !string.Equals(provenance.MinimizerDefinitionDigest, expectedMinimizerDigest, StringComparison.Ordinal)
+            || !string.Equals(provenance.ReplayPolicyDefinitionDigest, expectedReplayDigest, StringComparison.Ordinal))
+        {
+            throw new InvalidDataException("M1 provenance does not match the campaign, minimizer, and replay controls.");
         }
 
         var root = Path.GetFullPath(bundleRoot);
@@ -81,9 +107,10 @@ public sealed class EvidenceBundleBuilder
 
         await WriteJsonAsync(Path.Combine(root, "decision.json"), new
         {
-            schema_version = 1,
+            schema_version = 2,
             execution_mode = "SIMULATED",
             status = replay.Passed ? "SYNTHETIC_CONFIRMED" : "SYNTHETIC_FLAKY",
+            provenance,
             replay,
             minimization = new
             {
@@ -93,6 +120,7 @@ public sealed class EvidenceBundleBuilder
                 original_bytes = minimization.Original.CanonicalUtf8.Length,
                 minimized_bytes = minimization.Minimized.CanonicalUtf8.Length,
                 byte_reduction = minimization.ByteReduction,
+                maximum_oracle_attempts = provenance.MaximumOracleAttempts,
                 oracle_attempts = minimization.OracleAttempts,
                 stop_reason = minimization.StopReason
             },
@@ -139,7 +167,7 @@ public sealed class EvidenceBundleBuilder
         }
 
         var report = BuildReport(findingId, campaign, original, minimization, replay);
-        await WriteBytesAsync(Path.Combine(root, "report", "index.html"), Encoding.UTF8.GetBytes(report), cancellationToken).ConfigureAwait(false);
+        await WriteBytesAsync(Path.Combine(root, "report", "index.html"), ArtifactText.Encode(report), cancellationToken).ConfigureAwait(false);
         var entries = await EvidenceManifest.CreateAsync(root, cancellationToken).ConfigureAwait(false);
         return new EvidenceBuildResult(root, Path.Combine(root, EvidenceManifest.FileName), findingId.ToString("D"), campaign.Signature, entries.Count);
     }
@@ -151,7 +179,7 @@ public sealed class EvidenceBundleBuilder
 
     private static async Task WriteJsonAsync(string path, object value, CancellationToken cancellationToken)
     {
-        var bytes = JsonSerializer.SerializeToUtf8Bytes(value, ContractJson.Indented);
+        var bytes = ArtifactText.SerializeJson(value, ContractJson.Indented);
         await WriteBytesAsync(path, bytes, cancellationToken).ConfigureAwait(false);
     }
 
@@ -187,7 +215,7 @@ public sealed class EvidenceBundleBuilder
         ReplayDecision replay)
     {
         var signature = WebUtility.HtmlEncode(campaign.Signature);
-        return $$"""
+        return FormattableString.Invariant($$"""
             <!doctype html>
             <html lang="en">
             <head>
@@ -219,6 +247,6 @@ public sealed class EvidenceBundleBuilder
               </main>
             </body>
             </html>
-            """;
+            """);
     }
 }

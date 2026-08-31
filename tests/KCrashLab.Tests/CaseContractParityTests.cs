@@ -73,6 +73,21 @@ public sealed class CaseContractParityTests
         Assert.True(SchemaAccepts(LoadSchema(), oversized));
     }
 
+    [Fact]
+    public void ScheduleLengthEqualityIsAnExplicitRuntimeSemanticInvariant()
+    {
+        var document = With(ValidCase(), "operations", Operations(2));
+        document["schedule"] = new JsonObject
+        {
+            ["workers"] = 1,
+            ["delays_us"] = new JsonArray(0)
+        };
+        var json = document.ToJsonString();
+
+        Assert.True(SchemaAccepts(LoadSchema(), json));
+        Assert.False(RuntimeAccepts(json));
+    }
+
     private static IEnumerable<ParityCase> BoundaryCorpus()
     {
         yield return Case("baseline", ValidCase(), expected: true);
@@ -87,6 +102,8 @@ public sealed class CaseContractParityTests
         yield return Case("fields above maximum", WithFields(33), expected: false);
         yield return Case("maximum mutation operator length", WithMutation(new string('x', 64), new JsonObject()), expected: true);
         yield return Case("mutation operator above maximum", WithMutation(new string('x', 65), new JsonObject()), expected: false);
+        yield return Case("maximum Unicode mutation operator length", WithMutation(UnicodeText(64), new JsonObject()), expected: true);
+        yield return Case("Unicode mutation operator above maximum", WithMutation(UnicodeText(65), new JsonObject()), expected: false);
         yield return Case("maximum mutation parameters", WithMutation("x", Properties(32)), expected: true);
         yield return Case("mutation parameters above maximum", WithMutation("x", Properties(33)), expected: false);
         yield return Case("lowercase parent digest", With(ValidCase(), "parent_case_id", new string('a', 64)), expected: true);
@@ -98,6 +115,8 @@ public sealed class CaseContractParityTests
         yield return Case("floating point field", WithFieldValue(JsonNode.Parse("1.5")), expected: false);
         yield return Case("maximum field property name", WithNamedField(new string('p', 128)), expected: true);
         yield return Case("field property name above maximum", WithNamedField(new string('p', 129)), expected: false);
+        yield return Case("maximum Unicode property name", WithNamedField(UnicodeText(128)), expected: true);
+        yield return Case("Unicode property name above maximum", WithNamedField(UnicodeText(129)), expected: false);
         yield return Case("maximum nested parameter depth", WithNestedParameter(13), expected: true);
         yield return Case("parameter depth above maximum", WithNestedParameter(14), expected: false);
         yield return Case("schedule lower boundaries", WithSchedule(1, 0), expected: true);
@@ -145,9 +164,12 @@ public sealed class CaseContractParityTests
     }
 
     private static JsonObject WithOperationInput(int length)
+        => WithOperationInput(new string('a', length));
+
+    private static JsonObject WithOperationInput(string input)
     {
         var root = ValidCase();
-        root["operations"]![0]!["input"] = new string('a', length);
+        root["operations"]![0]!["input"] = input;
         return root;
     }
 
@@ -225,6 +247,8 @@ public sealed class CaseContractParityTests
 
         return properties;
     }
+
+    private static string UnicodeText(int runeCount) => string.Concat(Enumerable.Repeat("\U0001F600", runeCount));
 
     private sealed record ParityCase(string Name, string Json, bool Expected);
 }

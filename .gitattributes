@@ -1,1 +1,2 @@
 results/ export-ignore
+results/recorded/** -text whitespace=cr-at-eol

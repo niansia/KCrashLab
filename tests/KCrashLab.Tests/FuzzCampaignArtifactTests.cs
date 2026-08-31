@@ -30,6 +30,8 @@ public sealed class FuzzCampaignArtifactTests
             Assert.Equal(
                 await File.ReadAllTextAsync(Path.Combine(first, EvidenceManifest.FileName)),
                 await File.ReadAllTextAsync(Path.Combine(second, EvidenceManifest.FileName)));
+            TestPaths.AssertLfUtf8NoBom(Path.Combine(first, "metrics.csv"));
+            TestPaths.AssertLfUtf8NoBom(Path.Combine(first, "report", "index.html"));
             var valid = await FuzzCampaignArtifacts.VerifyAsync(first, CancellationToken.None);
             Assert.True(valid.IsValid, string.Join(Environment.NewLine, valid.Errors));
 

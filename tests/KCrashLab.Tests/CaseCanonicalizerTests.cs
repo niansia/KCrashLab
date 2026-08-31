@@ -47,4 +47,14 @@ public sealed class CaseCanonicalizerTests
 
         Assert.Throws<JsonException>(() => CaseCanonicalizer.Parse(json));
     }
+
+    [Fact]
+    public void InvalidUtf8BytesAreRejectedBeforeJsonCanonicalization()
+    {
+        byte[] invalidUtf8 = [0x7b, 0x22, 0x78, 0x22, 0x3a, 0x22, 0xff, 0x22, 0x7d];
+
+        var exception = Assert.Throws<InvalidDataException>(() => CaseCanonicalizer.Parse(invalidUtf8));
+
+        Assert.IsType<DecoderFallbackException>(exception.InnerException);
+    }
 }

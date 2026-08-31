@@ -158,12 +158,15 @@ internal static class KCrashCli
 
     private static async Task<int> RunCampaignAsync(string[] args, CancellationToken cancellationToken)
     {
+        const int maximumOracleAttempts = 128;
+        var replayPolicy = new ReplayPolicy(3, 3);
         var scenarioName = GetRequiredOption(args, "--scenario");
         var casePath = GetRequiredOption(args, "--case");
         var output = Path.GetFullPath(GetRequiredOption(args, "--output"));
         var scenarioPath = GetOption(args, "--scenario-file")
             ?? Path.Combine(Environment.CurrentDirectory, "samples", "scenarios", scenarioName + ".json");
 
+        var provenanceOptions = await ResolveProvenanceOptionsAsync(args, cancellationToken).ConfigureAwait(false);
         var fixture = await ScenarioFixtureLoader.LoadAsync(scenarioPath, cancellationToken).ConfigureAwait(false);
         if (!string.Equals(fixture.Name, scenarioName, StringComparison.Ordinal))
         {
@@ -171,6 +174,7 @@ internal static class KCrashCli
         }
 
         var canonical = CaseCanonicalizer.Parse(await File.ReadAllTextAsync(casePath, cancellationToken).ConfigureAwait(false));
+        var originalSignature = SyntheticStateTarget.Evaluate(canonical);
         var campaignId = DeterministicIdentity.CreateGuid("campaign", fixture.Name, canonical.CaseId, fixture.Seed);
         var store = new SqliteCampaignEventStore(Path.Combine(output, ".journal", "campaign.db"));
         await store.InitializeAsync(cancellationToken).ConfigureAwait(false);
@@ -189,26 +193,37 @@ internal static class KCrashCli
             return result.State is CampaignState.Quarantined or CampaignState.InfraFailed ? 2 : 0;
         }
 
-        var originalSignature = SyntheticStateTarget.Evaluate(canonical);
         if (!string.Equals(originalSignature, result.Signature, StringComparison.Ordinal))
         {
             throw new InvalidDataException("The selected case does not reproduce the fixture's synthetic target signature.");
         }
 
+        var provenance = await ExperimentProvenanceBuilder.ForMinimizationReplayAsync(
+            Environment.CurrentDirectory,
+            fixture.Name,
+            fixture.Seed,
+            canonical,
+            result.Signature,
+            maximumOracleAttempts,
+            replayPolicy,
+            provenanceOptions.RecordedAtUtc,
+            provenanceOptions.GitCommit,
+            cancellationToken).ConfigureAwait(false);
+
         var minimization = await HierarchicalMinimizer.MinimizeAsync(
             canonical,
             result.Signature,
             static (candidate, _) => Task.FromResult(SyntheticStateTarget.Evaluate(candidate)),
-            maximumAttempts: 128,
+            maximumAttempts: maximumOracleAttempts,
             cancellationToken).ConfigureAwait(false);
         var replay = await ReplayEngine.RunAsync(
-            new ReplayPolicy(3, 3),
+            replayPolicy,
             (_, _) => Task.FromResult(SyntheticStateTarget.Evaluate(minimization.Minimized)),
             result.Signature,
             cancellationToken).ConfigureAwait(false);
 
         var bundle = Path.Combine(output, "finding");
-        var built = await EvidenceBundleBuilder.BuildAsync(bundle, result, canonical, minimization, replay, cancellationToken).ConfigureAwait(false);
+        var built = await EvidenceBundleBuilder.BuildAsync(bundle, result, canonical, minimization, replay, provenance, cancellationToken).ConfigureAwait(false);
         var verification = await EvidenceBundleVerifier.VerifyAsync(bundle, cancellationToken).ConfigureAwait(false);
         Console.WriteLine($"Minimized: {canonical.Value.Operations.Count} -> {minimization.Minimized.Value.Operations.Count} operations");
         Console.WriteLine($"Bytes: {canonical.CanonicalUtf8.Length} -> {minimization.Minimized.CanonicalUtf8.Length}");
@@ -243,6 +258,8 @@ internal static class KCrashCli
             throw new InvalidDataException("--campaign-seed must be non-negative.");
         }
 
+        var provenanceOptions = await ResolveProvenanceOptionsAsync(args, cancellationToken).ConfigureAwait(false);
+
         var seed = CaseCanonicalizer.Parse(await File.ReadAllTextAsync(seedPath, cancellationToken).ConfigureAwait(false));
         if (!string.Equals(seed.Value.Target, "kcl.state", StringComparison.Ordinal))
         {
@@ -273,8 +290,8 @@ internal static class KCrashCli
         var provenance = await ExperimentProvenanceBuilder.ForFuzzAsync(
             Environment.CurrentDirectory,
             result,
-            GetOption(args, "--recorded-at") ?? ExperimentProvenanceBuilder.Unspecified,
-            GetOption(args, "--git-commit") ?? Environment.GetEnvironmentVariable("GITHUB_SHA") ?? ExperimentProvenanceBuilder.Uncommitted,
+            provenanceOptions.RecordedAtUtc,
+            provenanceOptions.GitCommit,
             cancellationToken).ConfigureAwait(false);
         var built = await FuzzCampaignArtifacts.BuildAsync(output, result, provenance, cancellationToken).ConfigureAwait(false);
         var verification = await FuzzCampaignArtifacts.VerifyAsync(output, cancellationToken).ConfigureAwait(false);
@@ -337,6 +354,8 @@ internal static class KCrashCli
             throw new InvalidDataException("--base-seed is outside the valid paired-trial range.");
         }
 
+        var provenanceOptions = await ResolveProvenanceOptionsAsync(args, cancellationToken).ConfigureAwait(false);
+
         var seed = CaseCanonicalizer.Parse(await File.ReadAllTextAsync(seedPath, cancellationToken).ConfigureAwait(false));
         if (!string.Equals(seed.Value.Target, "kcl.state", StringComparison.Ordinal)
             || SyntheticStateTarget.Evaluate(seed) is not null)
@@ -354,8 +373,8 @@ internal static class KCrashCli
         var provenance = await ExperimentProvenanceBuilder.ForE1Async(
             Environment.CurrentDirectory,
             result,
-            GetOption(args, "--recorded-at") ?? ExperimentProvenanceBuilder.Unspecified,
-            GetOption(args, "--git-commit") ?? Environment.GetEnvironmentVariable("GITHUB_SHA") ?? ExperimentProvenanceBuilder.Uncommitted,
+            provenanceOptions.RecordedAtUtc,
+            provenanceOptions.GitCommit,
             cancellationToken).ConfigureAwait(false);
         var built = await E1ExperimentArtifacts.BuildAsync(output, result, provenance, cancellationToken).ConfigureAwait(false);
         var verification = await E1ExperimentArtifacts.VerifyAsync(output, cancellationToken).ConfigureAwait(false);
@@ -399,6 +418,8 @@ internal static class KCrashCli
             throw new InvalidDataException("--base-seed is outside the valid paired-trial range.");
         }
 
+        var provenanceOptions = await ResolveProvenanceOptionsAsync(args, cancellationToken).ConfigureAwait(false);
+
         var seed = CaseCanonicalizer.Parse(await File.ReadAllTextAsync(seedPath, cancellationToken).ConfigureAwait(false));
         if (!string.Equals(seed.Value.Target, "kcl.state", StringComparison.Ordinal)
             || seed.Value.Operations.Count > 1
@@ -417,8 +438,8 @@ internal static class KCrashCli
         var provenance = await ExperimentProvenanceBuilder.ForE2Async(
             Environment.CurrentDirectory,
             result,
-            GetOption(args, "--recorded-at") ?? ExperimentProvenanceBuilder.Unspecified,
-            GetOption(args, "--git-commit") ?? Environment.GetEnvironmentVariable("GITHUB_SHA") ?? ExperimentProvenanceBuilder.Uncommitted,
+            provenanceOptions.RecordedAtUtc,
+            provenanceOptions.GitCommit,
             cancellationToken).ConfigureAwait(false);
         var built = await E2ExperimentArtifacts.BuildAsync(output, result, provenance, cancellationToken).ConfigureAwait(false);
         var verification = await E2ExperimentArtifacts.VerifyAsync(output, cancellationToken).ConfigureAwait(false);
@@ -511,6 +532,20 @@ internal static class KCrashCli
                 : throw new InvalidDataException($"Option {name} must be an integer.");
     }
 
+    private static async Task<(string RecordedAtUtc, string GitCommit)> ResolveProvenanceOptionsAsync(
+        string[] args,
+        CancellationToken cancellationToken)
+    {
+        var recordedAtUtc = GetOption(args, "--recorded-at") ?? ExperimentProvenanceBuilder.Unspecified;
+        var requestedGitCommit = GetOption(args, "--git-commit") ?? Environment.GetEnvironmentVariable("GITHUB_SHA");
+        var gitCommit = await ExperimentProvenanceBuilder.ResolveGitCommitAsync(
+            Environment.CurrentDirectory,
+            recordedAtUtc,
+            requestedGitCommit,
+            cancellationToken).ConfigureAwait(false);
+        return (recordedAtUtc, gitCommit);
+    }
+
     private static void PrintHelp()
     {
         Console.WriteLine(
@@ -525,14 +560,14 @@ internal static class KCrashCli
               kcrash lab evidence build --acquisition <acquisition.json> --output <bundle-directory>
               kcrash lab evidence verify <bundle-directory>
               kcrash case id <case.json>
-              kcrash campaign run --scenario <name> --case <case.json> --output <directory>
+              kcrash campaign run --scenario <name> --case <case.json> --recorded-at <UTC|SOURCE_COMMIT_TIME|UNSPECIFIED> [--git-commit <full-object-id>] --output <directory>
               kcrash evidence verify <bundle-directory>
-              kcrash fuzz run --seed <safe.case.json> --strategy <novelty|random> --budget <executions> --campaign-seed <integer> --recorded-at <UTC|UNSPECIFIED> --output <directory>
+              kcrash fuzz run --seed <safe.case.json> --strategy <novelty|random> --budget <executions> --campaign-seed <integer> --recorded-at <UTC|SOURCE_COMMIT_TIME|UNSPECIFIED> [--git-commit <full-object-id>] --output <directory>
                 novelty = novelty-only corpus admission + energy parent selection
                 random  = keep-all corpus admission + uniform parent selection
               kcrash fuzz verify <campaign-directory>
-              kcrash experiment e1 --seed <safe.case.json> --budget <executions> --trials <count> --base-seed <integer> --recorded-at <UTC|UNSPECIFIED> --output <directory>
-              kcrash experiment e2 --seed <single-call.case.json> --budget <executions> --trials <count> --base-seed <integer> --recorded-at <UTC|UNSPECIFIED> --output <directory>
+              kcrash experiment e1 --seed <safe.case.json> --budget <executions> --trials <count> --base-seed <integer> --recorded-at <UTC|SOURCE_COMMIT_TIME|UNSPECIFIED> [--git-commit <full-object-id>] --output <directory>
+              kcrash experiment e2 --seed <single-call.case.json> --budget <executions> --trials <count> --base-seed <integer> --recorded-at <UTC|SOURCE_COMMIT_TIME|UNSPECIFIED> [--git-commit <full-object-id>] --output <directory>
               kcrash experiment verify <experiment-directory>
             """);
     }
