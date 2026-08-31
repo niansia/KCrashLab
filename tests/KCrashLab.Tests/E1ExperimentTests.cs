@@ -8,6 +8,24 @@ namespace KCrashLab.Tests;
 public sealed class E1ExperimentTests
 {
     [Fact]
+    public void AblationChangesOnlyAdmissionAndParentSelectionFactors()
+    {
+        var arms = new[]
+        {
+            FuzzPolicySet.KeepAllUniform(),
+            FuzzPolicySet.KeepAllEnergy(),
+            FuzzPolicySet.NoveltyUniform(),
+            FuzzPolicySet.NoveltyEnergy()
+        };
+
+        Assert.Equal(4, arms.Select(static arm => arm.StrategyId).Distinct(StringComparer.Ordinal).Count());
+        Assert.Equal(2, arms.Select(static arm => arm.CorpusAdmission.PolicyId).Distinct(StringComparer.Ordinal).Count());
+        Assert.Equal(2, arms.Select(static arm => arm.ParentSelection.PolicyId).Distinct(StringComparer.Ordinal).Count());
+        Assert.Single(arms.Select(static arm => arm.OperatorSelection.PolicyId).Distinct(StringComparer.Ordinal));
+        Assert.Single(arms.Select(static arm => arm.CandidateSelection.PolicyId).Distinct(StringComparer.Ordinal));
+    }
+
+    [Fact]
     public async Task PairedExperimentIsDeterministicVerifiableAndTamperEvident()
     {
         var temporary = TestPaths.NewTemporaryDirectory();

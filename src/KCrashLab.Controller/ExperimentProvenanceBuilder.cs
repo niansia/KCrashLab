@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -10,6 +11,7 @@ public static class ExperimentProvenanceBuilder
     public const string EngineVersion = "1.3.0-sim";
     public const string Unspecified = "UNSPECIFIED";
     public const string Uncommitted = "UNCOMMITTED";
+    public const string SourceCommitTime = "SOURCE_COMMIT_TIME";
 
     private static readonly string[] SourceDirectories =
     [
@@ -67,6 +69,8 @@ public static class ExperimentProvenanceBuilder
     public static ExperimentProvenance UnspecifiedForFuzz(FuzzCampaignResult result) =>
         new(
             Unspecified,
+            Unspecified,
+            Unspecified,
             Uncommitted,
             Unspecified,
             DefinitionDigest(FuzzDefinition(result)),
@@ -76,6 +80,8 @@ public static class ExperimentProvenanceBuilder
     public static ExperimentProvenance UnspecifiedForE1(E1ExperimentResult result) =>
         new(
             Unspecified,
+            Unspecified,
+            Unspecified,
             Uncommitted,
             Unspecified,
             DefinitionDigest(E1Definition(result)),
@@ -84,6 +90,8 @@ public static class ExperimentProvenanceBuilder
 
     public static ExperimentProvenance UnspecifiedForE2(E2ExperimentResult result) =>
         new(
+            Unspecified,
+            Unspecified,
             Unspecified,
             Uncommitted,
             Unspecified,
@@ -106,6 +114,10 @@ public static class ExperimentProvenanceBuilder
             campaign_seed = campaignSeed,
             budget,
             seed_case_id = seedCaseId,
+            mutation_operators = DefaultMutationOperators.Create().Select(static item => item.OperatorId).ToArray(),
+            candidate_enumeration = MutationCandidateSampling.AlgorithmId,
+            maximum_candidates_per_operator = 64,
+            termination_rule = "BUDGET_OR_SCHEDULER_LIMIT_V1",
             case_schema_version = caseSchemaVersion,
             engine_version = EngineVersion
         });
@@ -158,6 +170,12 @@ public static class ExperimentProvenanceBuilder
     {
         var provenance = new ExperimentProvenance(
             element.GetProperty("recorded_at_utc").GetString() ?? throw new InvalidDataException("recorded_at_utc is null."),
+            element.TryGetProperty("source_commit_time_utc", out var commitTime)
+                ? commitTime.GetString() ?? throw new InvalidDataException("source_commit_time_utc is null.")
+                : Unspecified,
+            element.TryGetProperty("reproducible_timestamp_policy", out var timestampPolicy)
+                ? timestampPolicy.GetString() ?? throw new InvalidDataException("reproducible_timestamp_policy is null.")
+                : Unspecified,
             element.GetProperty("git_commit").GetString() ?? throw new InvalidDataException("git_commit is null."),
             element.GetProperty("source_tree_digest").GetString() ?? throw new InvalidDataException("source_tree_digest is null."),
             element.GetProperty("experiment_definition_digest").GetString() ?? throw new InvalidDataException("experiment_definition_digest is null."),
@@ -171,6 +189,15 @@ public static class ExperimentProvenanceBuilder
     {
         ArgumentNullException.ThrowIfNull(provenance);
         ValidateRecordedAt(provenance.RecordedAtUtc);
+        ValidateRecordedAt(provenance.SourceCommitTimeUtc);
+        if (provenance.ReproducibleTimestampPolicy is not (Unspecified or SourceCommitTime or "WALL_CLOCK"))
+            throw new InvalidDataException("Unsupported reproducible_timestamp_policy.");
+        if (provenance.RecordedAtUtc != Unspecified && provenance.SourceCommitTimeUtc != Unspecified
+            && DateTimeOffset.Parse(provenance.RecordedAtUtc) < DateTimeOffset.Parse(provenance.SourceCommitTimeUtc))
+            throw new InvalidDataException("recorded_at_utc cannot precede source_commit_time_utc.");
+        if (provenance.ReproducibleTimestampPolicy == SourceCommitTime
+            && provenance.RecordedAtUtc != provenance.SourceCommitTimeUtc)
+            throw new InvalidDataException("SOURCE_COMMIT_TIME policy requires equal artifact and commit timestamps.");
         ValidateGitCommit(provenance.GitCommit);
         ValidateDigestOrUnspecified(provenance.SourceTreeDigest, "source_tree_digest");
         ValidateDigest(provenance.ExperimentDefinitionDigest, "experiment_definition_digest");
@@ -188,18 +215,45 @@ public static class ExperimentProvenanceBuilder
         object definition,
         CancellationToken cancellationToken)
     {
-        ValidateRecordedAt(recordedAtUtc);
         ValidateGitCommit(gitCommit);
-        return new ExperimentProvenance(
-            recordedAtUtc,
+        var sourceCommitTime = gitCommit == Uncommitted
+            ? Unspecified
+            : await ReadCommitTimeAsync(repositoryRoot, gitCommit, cancellationToken).ConfigureAwait(false);
+        var timestampPolicy = recordedAtUtc == SourceCommitTime ? SourceCommitTime
+            : recordedAtUtc == Unspecified ? Unspecified : "WALL_CLOCK";
+        var artifactTime = recordedAtUtc == SourceCommitTime ? sourceCommitTime : recordedAtUtc;
+        var provenance = new ExperimentProvenance(
+            artifactTime,
+            sourceCommitTime,
+            timestampPolicy,
             gitCommit,
             await SourceTreeDigestAsync(repositoryRoot, cancellationToken).ConfigureAwait(false),
             DefinitionDigest(definition),
             caseSchemaVersion,
             EngineVersion);
+        Validate(provenance);
+        return provenance;
     }
 
-    private static async Task<string> SourceTreeDigestAsync(string repositoryRoot, CancellationToken cancellationToken)
+    private static async Task<string> ReadCommitTimeAsync(string repositoryRoot, string gitCommit, CancellationToken cancellationToken)
+    {
+        var start = new ProcessStartInfo("git", $"show -s --format=%cI {gitCommit}")
+        {
+            WorkingDirectory = repositoryRoot,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+        using var process = Process.Start(start) ?? throw new InvalidOperationException("Unable to start git for provenance.");
+        var output = (await process.StandardOutput.ReadToEndAsync(cancellationToken).ConfigureAwait(false)).Trim();
+        await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+        if (process.ExitCode != 0 || !DateTimeOffset.TryParse(output, out var parsed))
+            throw new InvalidDataException("Unable to resolve source commit timestamp.");
+        return parsed.ToUniversalTime().ToString("O", System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    public static async Task<string> SourceTreeDigestAsync(string repositoryRoot, CancellationToken cancellationToken)
     {
         var root = Path.GetFullPath(repositoryRoot);
         var files = new List<string>();
@@ -261,9 +315,13 @@ public static class ExperimentProvenanceBuilder
         execution_mode = result.ExecutionMode,
         strategy = result.Strategy,
         campaign_seed = result.CampaignSeed,
-        budget = result.Budget,
-        seed_case_id = result.SeedCaseId,
-        case_schema_version = result.Corpus[0].TestCase.Value.SchemaVersion,
+            budget = result.Budget,
+            seed_case_id = result.SeedCaseId,
+            mutation_operators = DefaultMutationOperators.Create().Select(static item => item.OperatorId).ToArray(),
+            candidate_enumeration = result.CandidateEnumeration,
+            maximum_candidates_per_operator = result.MaximumCandidatesPerOperator,
+            termination_rule = "BUDGET_OR_SCHEDULER_LIMIT_V1",
+            case_schema_version = result.Corpus[0].TestCase.Value.SchemaVersion,
         engine_version = EngineVersion
     };
 

@@ -9,7 +9,7 @@
 ## Untrusted
 
 - Case files, backend messages, artifact names and bytes, triage text, and manifests.
-- Any future guest or driver output.
+- Any guest, driver, Hyper-V, dump, or debugger output.
 
 ## Required defenses
 
@@ -24,4 +24,3 @@
 ## Claims policy
 
 A simulated failure is evidence about control-plane behavior, not evidence of a kernel defect or exploitability. Root cause and exploitability remain `NOT_CLAIMED` and `NOT_ASSESSED` unless a future, separately governed investigation establishes them.
-

@@ -4,16 +4,16 @@ Date: 2026-08-31
 
 ## Question
 
-Within the same valid Case IR mutation envelope, does semantic-novelty scheduling reach the known `kcl.state` synthetic signature more consistently than uniform-random parent/operator/candidate selection under a fixed execution budget?
+Within the same valid Case IR mutation envelope, what are the separate descriptive effects of corpus-admission feedback and parent scheduling on discovery of the known `kcl.state` synthetic signature under a fixed execution budget?
 
-This is a narrower and fairer v1 adaptation of the blueprint's grammar-aware-versus-random experiment. Both strategies use the same boundary scalar, payload block, and sequence insert/delete/swap operators. The comparison isolates scheduling feedback; it does not compare grammar-aware inputs with arbitrary raw bytes.
+E1 v2 is a 2×2 policy ablation. It crosses keep-all versus novelty-only corpus admission with uniform versus energy-ranked parent selection. Operator selection and candidate selection are uniform in every arm; all arms use the same boundary scalar, payload block, and sequence insert/delete/swap operators. This avoids attributing the effect of several simultaneously changed scheduling decisions to semantic novelty alone.
 
 ## Fixed design
 
 - Safe seed: `samples/cases/state-safe-seed.case.json`.
 - Target: deterministic user-mode `kcl.state` model.
-- Strategies: `NOVELTY_GUIDED_DETERMINISTIC_V1` and `UNIFORM_RANDOM_VALID_MUTATION_V1`.
-- Budget: 256 executions per strategy and trial.
+- Strategies: `KEEP_ALL_UNIFORM_V2`, `KEEP_ALL_ENERGY_V2`, `NOVELTY_ONLY_UNIFORM_V2`, and `NOVELTY_ONLY_ENERGY_V2`.
+- Budget: 256 executions per arm and trial.
 - Trials: 20 paired campaign seeds from 20260831 through 20260850.
 - Outcome: first exact matching signature; no finding at execution 256 is right-censored.
 - Quantiles: linear interpolation, calculated among successful trials only.
@@ -25,7 +25,7 @@ dotnet run --project src/KCrashLab.Cli --configuration Release -- experiment e1 
   --budget 256 `
   --trials 20 `
   --base-seed 20260831 `
-  --recorded-at 2026-08-31T00:00:00Z `
+  --recorded-at SOURCE_COMMIT_TIME `
   --output results/recorded/e1
 
 dotnet run --project src/KCrashLab.Cli --configuration Release -- experiment verify results/recorded/e1
@@ -33,19 +33,12 @@ dotnet run --project src/KCrashLab.Cli --configuration Release -- experiment ver
 
 ## Recorded descriptive result
 
-| Strategy | Discoveries | Censored | Discovery rate | First finding median [Q1, Q3]* |
-|---|---:|---:|---:|---:|
-| Novelty-guided deterministic | 20/20 | 0 | 100% | 70 [59.5, 71] |
-| Uniform-random valid mutation | 5/20 | 15 | 25% | 40 [26, 54] |
+The checked-in `results/recorded/e1` directory is a legacy v1 two-engine record and is retained only for provenance. It does **not** answer the v2 ablation question and must not be cited as evidence that semantic novelty alone caused its 20/20 versus 5/20 result. A canonical v2 table will be added only after all four arms are run from a committed source tree and the generated bundle passes `experiment verify`.
 
-*The first-finding statistic includes successful trials only. The random baseline's lower median must not be read as better typical time-to-finding because 75% of its trials are censored and absent from that median. Discovery/censoring must be considered first.
-
-The observed fixture supports the engineering expectation that retaining semantic novelty makes discovery more reliable on this synthetic state machine. It does not establish statistical significance, external validity, real-driver performance, kernel coverage effectiveness, or a general advantage across targets. Those claims remain explicitly `NOT_ASSESSED` or `NOT_CLAIMED` in the artifact.
-
-The canonical report now includes `1 − Kaplan–Meier survival` as a step curve. All 15 random no-finding trials remain in the risk set until the execution-256 censoring boundary. The paired descriptive table records 5 both-discovered, 15 novelty-only, 0 random-only, and 0 neither outcomes. No p-value is reported because this deterministic seed suite is not claimed to be a random sample from a wider target population.
+The v2 report includes `1 − Kaplan–Meier survival` for every arm and paired contrasts for admission at each parent policy and parent policy at each admission policy. No p-value is reported because the deterministic seed suite is not claimed to be a random sample from a wider target population. The experiment does not establish external validity, real-driver performance, kernel coverage effectiveness, or a general advantage across targets.
 
 ## Reproducibility correction made during the study
 
 An initial dry run revealed that the novelty engine recorded campaign seeds without using them to change scheduling, so its nominal trials repeated one path. That result was rejected. The final engine uses an explicit SplitMix64 schedule to rotate operator and candidate order; same-seed execution logs remain identical, while different seeds are contract-tested to produce different orders.
 
-The artifact's `raw.csv` preserves all 40 trial outcomes, including every censored trial; `survival.csv` is deterministically derived and cross-checked by the verifier. Re-running the exact command must produce a byte-identical manifest before the record is accepted.
+The v2 artifact's `raw.csv` preserves all 80 trial outcomes, including every censored trial; `survival.csv` and `contrasts.csv` are deterministically derived and cross-checked by the verifier. Re-running the exact command must produce a byte-identical manifest before the record is accepted.

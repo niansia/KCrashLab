@@ -11,7 +11,7 @@ dotnet run --project src/KCrashLab.Cli --configuration Release -- fuzz run `
   --seed samples/cases/state-safe-seed.case.json `
   --budget 256 `
   --campaign-seed 20260831 `
-  --recorded-at 2026-08-31T00:00:00Z `
+  --recorded-at SOURCE_COMMIT_TIME `
   --output results/recorded/g3
 
 dotnet run --project src/KCrashLab.Cli --configuration Release -- fuzz verify results/recorded/g3

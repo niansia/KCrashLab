@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Nodes;
 using KCrashLab.Contracts;
@@ -5,6 +6,31 @@ using KCrashLab.Contracts;
 namespace KCrashLab.Domain;
 
 public sealed record MutationContext(long CampaignSeed, int MaximumCandidatesPerOperator = 64);
+
+public static class MutationCandidateSampling
+{
+    public const string AlgorithmId = "HASH_RANKED_V1";
+
+    public static IEnumerable<CanonicalCase> Select(
+        IEnumerable<CanonicalCase> candidates,
+        MutationContext context,
+        string operatorId)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(context.MaximumCandidatesPerOperator, 1);
+        return candidates
+            .Select(candidate => (Candidate: candidate, Rank: Rank(context.CampaignSeed, operatorId, candidate.CaseId)))
+            .OrderBy(static item => item.Rank, StringComparer.Ordinal)
+            .ThenBy(static item => item.Candidate.CaseId, StringComparer.Ordinal)
+            .Take(context.MaximumCandidatesPerOperator)
+            .Select(static item => item.Candidate);
+    }
+
+    private static string Rank(long seed, string operatorId, string caseId)
+    {
+        var bytes = Encoding.UTF8.GetBytes($"{seed}\0{operatorId}\0{caseId}");
+        return Convert.ToHexString(SHA256.HashData(bytes));
+    }
+}
 
 public interface ICaseMutationOperator
 {
@@ -33,7 +59,11 @@ public sealed class BoundaryScalarMutationOperator : ICaseMutationOperator
 
     public IEnumerable<CanonicalCase> Mutate(CanonicalCase source, MutationContext context)
     {
-        var emitted = 0;
+        return MutationCandidateSampling.Select(Enumerate(source, context), context, OperatorId);
+    }
+
+    private IEnumerable<CanonicalCase> Enumerate(CanonicalCase source, MutationContext context)
+    {
         var sourceRoot = MutationJson.ParseRoot(source);
         var operations = MutationJson.GetOperations(sourceRoot);
         for (var operationIndex = 0; operationIndex < operations.Count; operationIndex++)
@@ -58,11 +88,6 @@ public sealed class BoundaryScalarMutationOperator : ICaseMutationOperator
                     .ToArray();
                 foreach (var replacement in values)
                 {
-                    if (emitted >= context.MaximumCandidatesPerOperator)
-                    {
-                        yield break;
-                    }
-
                     var root = sourceRoot.DeepClone().AsObject();
                     MutationJson.GetOperations(root)[operationIndex]!["fields"]![field.Key] = replacement;
                     var parameters = new JsonObject
@@ -74,7 +99,6 @@ public sealed class BoundaryScalarMutationOperator : ICaseMutationOperator
                         ["campaign_seed"] = context.CampaignSeed
                     };
                     yield return MutationJson.Build(source, root, OperatorId, parameters);
-                    emitted++;
                 }
             }
         }
@@ -100,7 +124,11 @@ public sealed class PayloadBlockMutationOperator : ICaseMutationOperator
 
     public IEnumerable<CanonicalCase> Mutate(CanonicalCase source, MutationContext context)
     {
-        var emitted = 0;
+        return MutationCandidateSampling.Select(Enumerate(source, context), context, OperatorId);
+    }
+
+    private IEnumerable<CanonicalCase> Enumerate(CanonicalCase source, MutationContext context)
+    {
         var sourceRoot = MutationJson.ParseRoot(source);
         var operations = MutationJson.GetOperations(sourceRoot);
         for (var operationIndex = 0; operationIndex < operations.Count; operationIndex++)
@@ -120,11 +148,6 @@ public sealed class PayloadBlockMutationOperator : ICaseMutationOperator
             };
             foreach (var replacement in replacements.Distinct(StringComparer.Ordinal).Where(candidate => candidate != payload))
             {
-                if (emitted >= context.MaximumCandidatesPerOperator)
-                {
-                    yield break;
-                }
-
                 var root = sourceRoot.DeepClone().AsObject();
                 MutationJson.GetOperations(root)[operationIndex]!["fields"]!["payload"] = replacement;
                 var parameters = new JsonObject
@@ -135,7 +158,6 @@ public sealed class PayloadBlockMutationOperator : ICaseMutationOperator
                     ["campaign_seed"] = context.CampaignSeed
                 };
                 yield return MutationJson.Build(source, root, OperatorId, parameters);
-                emitted++;
             }
         }
     }
@@ -147,9 +169,14 @@ public sealed class SequenceDeleteMutationOperator : ICaseMutationOperator
 
     public IEnumerable<CanonicalCase> Mutate(CanonicalCase source, MutationContext context)
     {
+        return MutationCandidateSampling.Select(Enumerate(source, context), context, OperatorId);
+    }
+
+    private IEnumerable<CanonicalCase> Enumerate(CanonicalCase source, MutationContext context)
+    {
         var sourceRoot = MutationJson.ParseRoot(source);
         var count = MutationJson.GetOperations(sourceRoot).Count;
-        for (var index = 0; index < count && index < context.MaximumCandidatesPerOperator; index++)
+        for (var index = 0; index < count; index++)
         {
             var root = sourceRoot.DeepClone().AsObject();
             MutationJson.GetOperations(root).RemoveAt(index);
@@ -169,9 +196,14 @@ public sealed class SequenceSwapMutationOperator : ICaseMutationOperator
 
     public IEnumerable<CanonicalCase> Mutate(CanonicalCase source, MutationContext context)
     {
+        return MutationCandidateSampling.Select(Enumerate(source, context), context, OperatorId);
+    }
+
+    private IEnumerable<CanonicalCase> Enumerate(CanonicalCase source, MutationContext context)
+    {
         var sourceRoot = MutationJson.ParseRoot(source);
         var count = MutationJson.GetOperations(sourceRoot).Count;
-        for (var index = 0; index + 1 < count && index < context.MaximumCandidatesPerOperator; index++)
+        for (var index = 0; index + 1 < count; index++)
         {
             var root = sourceRoot.DeepClone().AsObject();
             var operations = MutationJson.GetOperations(root);
@@ -201,15 +233,18 @@ public sealed class SequenceInsertMutationOperator : ICaseMutationOperator
 
     public IEnumerable<CanonicalCase> Mutate(CanonicalCase source, MutationContext context)
     {
-        var emitted = 0;
+        return MutationCandidateSampling.Select(Enumerate(source, context), context, OperatorId);
+    }
+
+    private IEnumerable<CanonicalCase> Enumerate(CanonicalCase source, MutationContext context)
+    {
         var sourceRoot = MutationJson.ParseRoot(source);
         var count = MutationJson.GetOperations(sourceRoot).Count;
         for (var index = 0; index <= count; index++)
         {
             for (var templateIndex = 0; templateIndex < Templates.Length; templateIndex++)
             {
-                if (emitted >= context.MaximumCandidatesPerOperator
-                    || count >= CaseCanonicalizer.MaximumOperations)
+                if (count >= CaseCanonicalizer.MaximumOperations)
                 {
                     yield break;
                 }
@@ -223,7 +258,6 @@ public sealed class SequenceInsertMutationOperator : ICaseMutationOperator
                     ["template_index"] = templateIndex,
                     ["campaign_seed"] = context.CampaignSeed
                 });
-                emitted++;
             }
         }
     }
@@ -280,4 +314,3 @@ internal static class MutationJson
         (delays[left], delays[right]) = (delays[right]?.DeepClone(), delays[left]?.DeepClone());
     }
 }
-

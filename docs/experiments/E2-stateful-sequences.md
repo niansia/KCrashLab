@@ -4,7 +4,9 @@ Date: 2026-08-31
 
 ## Question
 
-Can stateful sequence fuzzing discover a cross-operation synthetic failure that a single-call input model cannot express?
+Can the stateful Case IR express and discover a cross-operation synthetic failure that a single-call input model cannot express?
+
+This is an expressiveness/sanity validation. Because the target's ground truth requires a three-operation prerequisite chain, the single-call arm cannot represent the trigger; the result must not be presented as a general empirical performance advantage for stateful fuzzing.
 
 ## Controlled design
 
@@ -21,7 +23,7 @@ dotnet run --project src/KCrashLab.Cli --configuration Release -- experiment e2 
   --budget 512 `
   --trials 20 `
   --base-seed 20260831 `
-  --recorded-at 2026-08-31T00:00:00Z `
+  --recorded-at SOURCE_COMMIT_TIME `
   --output results/recorded/e2
 
 dotnet run --project src/KCrashLab.Cli --configuration Release -- experiment verify results/recorded/e2

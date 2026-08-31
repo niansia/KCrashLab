@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+title: KCrashLab
+message: "If you use KCrashLab or its recorded artifacts, cite this repository and the exact release or commit you evaluated."
+type: software
+authors:
+  - family-names: Nian
+    given-names: Sia
+repository-code: "https://github.com/niansia/KCrashLab"
+license: Apache-2.0
+version: 0.1.0-research-preview
+date-released: 2026-08-31
+keywords:
+  - fuzzing
+  - reproducibility
+  - evidence integrity
+  - Windows kernel research

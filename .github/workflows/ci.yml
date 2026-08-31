@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   safe-simulation:
-    runs-on: windows-latest
+    runs-on: windows-2022
     timeout-minutes: 15
 
     steps:
@@ -17,9 +17,17 @@ jobs:
 
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: 8.0.100
           cache: true
           cache-dependency-path: Directory.Packages.props
+
+      - name: Parse Track B PowerShell without execution
+        shell: pwsh
+        run: |
+          $errors = $null
+          [void][Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path scripts/track-b-g1.ps1), [ref]$null, [ref]$errors)
+          if ($errors.Count) { $errors | Format-List | Out-String | Write-Error }
 
       - name: Restore
         run: dotnet restore KCrashLab.sln
@@ -74,3 +82,22 @@ jobs:
             artifacts/KCrashLab-source.zip
           if-no-files-found: warn
           retention-days: 7
+
+  cross-platform-simulation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.100
+          cache: true
+          cache-dependency-path: Directory.Packages.props
+
+      - name: Restore exact dependency graph
+        run: dotnet restore KCrashLab.sln
+
+      - name: Test cross-platform simulation contracts
+        run: dotnet test KCrashLab.sln --configuration Release --no-restore

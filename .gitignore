@@ -11,4 +11,8 @@ artifacts/
 *.db-wal
 *.dmp
 *.DMP
-
+real-lab-profile.json
+*.real-lab-profile.json
+private-acquisition.json
+private-discovery/
+private-replay-*/

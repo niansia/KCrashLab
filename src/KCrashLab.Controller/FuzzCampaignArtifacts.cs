@@ -58,6 +58,13 @@ public static class FuzzCampaignArtifacts
             campaign_seed = result.CampaignSeed,
             budget = result.Budget,
             executions = result.Executions,
+            termination_reason = result.TerminationReason,
+            scheduling_iterations = result.SchedulingIterations,
+            scheduling_limit = result.SchedulingLimit,
+            duplicate_candidate_skips = result.DuplicateCandidateSkips,
+            empty_candidate_polls = result.EmptyCandidatePolls,
+            candidate_enumeration = result.CandidateEnumeration,
+            max_candidates = result.MaximumCandidatesPerOperator,
             seed_case_id = result.SeedCaseId,
             corpus_count = result.Corpus.Count,
             coverage_count = result.GlobalCoverage.Count,
@@ -191,6 +198,19 @@ public static class FuzzCampaignArtifacts
             if (budget < 1 || executions < 1 || executions > budget)
             {
                 errors.Add("summary.json contains invalid budget or execution counts.");
+            }
+            var terminationReason = summaryRoot.GetProperty("termination_reason").GetString();
+            var schedulingIterations = summaryRoot.GetProperty("scheduling_iterations").GetInt32();
+            var schedulingLimit = summaryRoot.GetProperty("scheduling_limit").GetInt32();
+            if (terminationReason is not ("BUDGET_REACHED" or "SCHEDULER_ITERATION_LIMIT_REACHED")
+                || schedulingIterations < 0 || schedulingIterations > schedulingLimit
+                || (terminationReason == "BUDGET_REACHED") != (executions == budget)
+                || summaryRoot.GetProperty("candidate_enumeration").GetString() != MutationCandidateSampling.AlgorithmId
+                || summaryRoot.GetProperty("max_candidates").GetInt32() < 1
+                || summaryRoot.GetProperty("duplicate_candidate_skips").GetInt32() < 0
+                || summaryRoot.GetProperty("empty_candidate_polls").GetInt32() < 0)
+            {
+                errors.Add("summary.json contains invalid scheduler termination telemetry.");
             }
 
             if (summaryRoot.GetProperty("campaign_seed").GetInt64() < 0)

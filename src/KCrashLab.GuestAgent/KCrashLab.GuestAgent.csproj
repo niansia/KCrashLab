@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\KCrashLab.Contracts\KCrashLab.Contracts.csproj" />
+    <ProjectReference Include="..\KCrashLab.Domain\KCrashLab.Domain.csproj" />
+  </ItemGroup>
+</Project>
