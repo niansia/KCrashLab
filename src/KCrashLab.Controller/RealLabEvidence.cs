@@ -194,12 +194,12 @@ public static class RealLabEvidence
     private static void ValidateHash(string? value, string name)
     { if (!IsHash(value)) throw new InvalidDataException($"{name} SHA-256 is invalid."); }
     private static bool IsHash(string? value) => value is { Length: 64 } && value.All(static item => item is (>= '0' and <= '9') or (>= 'a' and <= 'f'));
-    private static Task WriteJson(string path, object value, CancellationToken token) => WriteBytes(path, JsonSerializer.SerializeToUtf8Bytes(value, ContractJson.Indented), token);
-    private static Task WriteText(string path, string value, CancellationToken token) => WriteBytes(path, Encoding.UTF8.GetBytes(value), token);
+    private static Task WriteJson(string path, object value, CancellationToken token) => WriteBytes(path, ArtifactText.SerializeJson(value, ContractJson.Indented), token);
+    private static Task WriteText(string path, string value, CancellationToken token) => WriteBytes(path, ArtifactText.Encode(value), token);
     private static async Task WriteBytes(string path, ReadOnlyMemory<byte> value, CancellationToken token)
     { Directory.CreateDirectory(Path.GetDirectoryName(path)!); await File.WriteAllBytesAsync(path, value.ToArray(), token).ConfigureAwait(false); }
 
-    private static string BuildReport(RealLabEvidenceInput input, string signature) => $$"""
+    private static string BuildReport(RealLabEvidenceInput input, string signature) => FormattableString.Invariant($$"""
         <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
         <title>KCrashLab confirmed isolated-lab finding</title><style>body{font-family:Segoe UI,system-ui,sans-serif;max-width:920px;margin:40px auto;padding:0 20px;background:#f4f6f8;color:#16202a}.banner{background:#173b57;color:#fff;padding:18px;border-radius:8px;font-weight:700}main{background:#fff;padding:28px;margin-top:18px;border-radius:8px}dt{font-weight:700;margin-top:12px}dd{margin-left:0}code{overflow-wrap:anywhere}</style></head>
         <body><div class="banner">REAL WINDOWS LAB — REPOSITORY-OWNED SYNTHETIC DRIVER</div><main><h1>Confirmed reproducibility finding</h1><dl>
@@ -211,7 +211,7 @@ public static class RealLabEvidence
         <dt>Raw dump</dt><dd>WITHHELD — sensitive kernel memory; SHA-256 recorded in private-artifacts.json</dd>
         <dt>Root cause</dt><dd>Repository-owned deterministic synthetic bugcheck oracle</dd>
         <dt>Exploitability</dt><dd>NOT ASSESSED</dd></dl></main></body></html>
-        """;
+        """);
 
     private static string BuildSanitizedWindbg(TriageAnalysis analysis)
     {

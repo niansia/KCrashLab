@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "execution_mode": "SIMULATED",
+  "finding_id": "01e5b373-a086-59e1-ab1b-7646672ae428",
+  "signature_version": 1,
+  "signature": "c16b0923faeafce6e8196416e81c29d76ea01fa379e562fa7c785b373f6cf1db",
+  "case_id": "13d026745303bb94e23d8ecb6957ba7da950c4462a90569c58088e6db62ace18",
+  "scenario": "dump-ready",
+  "classification": "SYNTHETIC_CONFIRMED",
+  "claims": {
+    "kernel_crash": "NOT_CLAIMED",
+    "root_cause": "NOT_CLAIMED",
+    "exploitability": "NOT_ASSESSED"
+  },
+  "evidence_coverage": {
+    "synthetic_artifact": "VERIFIED_BY_HASH",
+    "triage_input": "SYNTHETIC_FIXTURE",
+    "input_lineage": "VERIFIED",
+    "simulated_clean_replay": "VERIFIED",
+    "crash_dump": "NOT_APPLICABLE",
+    "symbols": "NOT_APPLICABLE",
+    "root_cause": "NOT_CLAIMED",
+    "exploitability": "NOT_ASSESSED"
+  }
+}

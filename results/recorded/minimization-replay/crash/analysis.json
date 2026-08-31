@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "execution_mode": "SIMULATED",
+  "fixture_version": "1",
+  "bugcheck_code": "0x000000c4",
+  "relevant_parameters": [
+    "0x000000f6",
+    "0x00000000",
+    "0x00000000",
+    "0x00000000"
+  ],
+  "faulting_module": "kclsynthetic",
+  "verifier_rule_id": "0x000000f6",
+  "normalized_frames": [
+    "kclsynthetic!submitrecord",
+    "kclsynthetic!dispatch",
+    "kclsim!runoperation",
+    "kclsim!runcase",
+    "kclcontroller!execute"
+  ],
+  "parse_confidence": "HIGH",
+  "warnings": []
+}

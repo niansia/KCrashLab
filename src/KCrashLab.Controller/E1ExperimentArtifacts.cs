@@ -85,7 +85,7 @@ public static class E1ExperimentArtifacts
                 .Append(trial.ExactSignatures.ToString(CultureInfo.InvariantCulture)).Append('\n');
         }
 
-        await WriteBytesAsync(Path.Combine(root, "raw.csv"), Encoding.UTF8.GetBytes(raw.ToString()), cancellationToken).ConfigureAwait(false);
+        await WriteBytesAsync(Path.Combine(root, "raw.csv"), ArtifactText.Encode(raw.ToString()), cancellationToken).ConfigureAwait(false);
         var survival = new StringBuilder();
         survival.Append("strategy,execution,at_risk,discoveries,censored,survival_probability,cumulative_discovery_probability\n");
         foreach (var point in result.SurvivalCurve)
@@ -93,8 +93,8 @@ public static class E1ExperimentArtifacts
             survival.Append(BuildSurvivalRow(point)).Append('\n');
         }
 
-        await WriteBytesAsync(Path.Combine(root, "survival.csv"), Encoding.UTF8.GetBytes(survival.ToString()), cancellationToken).ConfigureAwait(false);
-        await WriteBytesAsync(Path.Combine(root, "report", "index.html"), Encoding.UTF8.GetBytes(BuildReport(result)), cancellationToken).ConfigureAwait(false);
+        await WriteBytesAsync(Path.Combine(root, "survival.csv"), ArtifactText.Encode(survival.ToString()), cancellationToken).ConfigureAwait(false);
+        await WriteBytesAsync(Path.Combine(root, "report", "index.html"), ArtifactText.Encode(BuildReport(result)), cancellationToken).ConfigureAwait(false);
         var entries = await EvidenceManifest.CreateAsync(root, cancellationToken).ConfigureAwait(false);
         return new E1ArtifactBuildResult(root, entries.Count);
     }
@@ -323,12 +323,12 @@ public static class E1ExperimentArtifacts
     private static string BuildReport(E1ExperimentResult result)
     {
         var rows = string.Join(
-            Environment.NewLine,
+            "\n",
             result.Strategies.Select(summary => $"<tr><td><code>{WebUtility.HtmlEncode(summary.Strategy)}</code></td><td>{summary.Discoveries}/{summary.Trials}</td><td>{summary.CensoredTrials}</td><td>{FormatNumber(summary.MedianFirstFindingAmongDiscoveries)} [{FormatNumber(summary.FirstFindingQ1AmongDiscoveries)}, {FormatNumber(summary.FirstFindingQ3AmongDiscoveries)}]</td></tr>"));
         var contrasts = string.Join(
-            Environment.NewLine,
+            "\n",
             result.FactorialContrasts.Select(contrast => $"<tr><td><code>{WebUtility.HtmlEncode(contrast.Contrast)}</code></td><td><code>{WebUtility.HtmlEncode(contrast.LeftStrategy)}</code></td><td><code>{WebUtility.HtmlEncode(contrast.RightStrategy)}</code></td><td>{contrast.BothDiscovered}</td><td>{contrast.LeftOnly}</td><td>{contrast.RightOnly}</td><td>{contrast.NeitherDiscovered}</td></tr>"));
-        return $$"""
+        return FormattableString.Invariant($$"""
             <!doctype html>
             <html lang="en">
             <head>
@@ -349,17 +349,17 @@ public static class E1ExperimentArtifacts
                 <p class="muted">Paired deterministic trials against one synthetic state-machine target. Corpus admission (keep-all/novelty-only) is crossed with parent selection (uniform/energy). Operator and candidate selection remain uniform in every arm. This report makes no claim about real drivers or statistical significance.</p>
                 <p>Budget: <strong>{{result.BudgetPerTrial}}</strong> executions per trial; paired trials: <strong>{{result.TrialsPerStrategy}}</strong>; base seed: <code>{{result.BaseCampaignSeed}}</code>.</p>
                 <table><thead><tr><th>Strategy</th><th>Discoveries</th><th>Censored</th><th>Median [Q1, Q3] first finding*</th></tr></thead><tbody>{{rows}}</tbody></table>
-                <p class="muted">* Quantiles use linear interpolation and include successful trials only. No-finding trials are right-censored at the fixed budget and listed separately.</p>
+                <p class="muted">* Quantiles use linear interpolation and include successful trials only. No-finding trials are right-censored at their actual completed execution count and listed separately.</p>
                 <h2>Censoring-aware discovery curve</h2>
                 {{BuildSurvivalSvg(result)}}
-                <p class="muted">The step curve is 1 − Kaplan–Meier survival. Censored trials remain in the risk set through execution {{result.BudgetPerTrial}}.</p>
+                <p class="muted">The step curve is 1 − Kaplan–Meier survival. Censored trials remain in the risk set through their recorded execution count.</p>
                 <h2>Planned paired contrasts</h2>
                 <table><thead><tr><th>Contrast</th><th>Left</th><th>Right</th><th>Both</th><th>Left only</th><th>Right only</th><th>Neither</th></tr></thead><tbody>{{contrasts}}</tbody></table>
                 <p class="muted">These counts are descriptive. Statistical significance and external validity are not assessed.</p>
               </main>
             </body>
             </html>
-            """;
+            """);
     }
 
     private static string FormatNumber(double? value) =>
@@ -467,7 +467,7 @@ public static class E1ExperimentArtifacts
     }
 
     private static async Task WriteJsonAsync(string path, object value, CancellationToken cancellationToken) =>
-        await WriteBytesAsync(path, JsonSerializer.SerializeToUtf8Bytes(value, ArtifactJson), cancellationToken).ConfigureAwait(false);
+        await WriteBytesAsync(path, ArtifactText.SerializeJson(value, ArtifactJson), cancellationToken).ConfigureAwait(false);
 
     private static JsonSerializerOptions CreateArtifactJson()
     {

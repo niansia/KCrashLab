@@ -128,6 +128,7 @@
         "recorded_at_utc",
         "git_commit",
         "source_tree_digest",
+        "source_tree_digest_algorithm",
         "experiment_definition_digest",
         "case_schema_version",
         "engine_version"
@@ -164,6 +165,12 @@
               "type": "string",
               "pattern": "^[a-f0-9]{64}$"
             }
+          ]
+        },
+        "source_tree_digest_algorithm": {
+          "enum": [
+            "UNSPECIFIED",
+            "GIT_TREE_SHA256_V1"
           ]
         },
         "experiment_definition_digest": {

@@ -201,7 +201,7 @@ public sealed class PolicyDrivenFuzzEngine(
         ObserveFinding(seed, seedObservation, 1, findings);
         var executions = 1;
         var schedulingIteration = 0;
-        var schedulingLimit = Math.Max(4_096, budget * operators.Count * 32);
+        var schedulingLimit = FuzzSchedulingPolicy.ComputeIterationLimit(budget, operators.Count);
         var duplicateCandidateSkips = 0;
         var emptyCandidatePolls = 0;
 
@@ -251,6 +251,7 @@ public sealed class PolicyDrivenFuzzEngine(
             budget,
             executions,
             executions == budget ? "BUDGET_REACHED" : "SCHEDULER_ITERATION_LIMIT_REACHED",
+            FuzzSchedulingPolicy.AlgorithmId,
             schedulingIteration,
             schedulingLimit,
             duplicateCandidateSkips,
@@ -382,5 +383,23 @@ public sealed class PolicyDrivenFuzzEngine(
         public int Occurrences { get; set; } = 1;
         public FuzzFindingSnapshot Snapshot() =>
             new(Signature, FirstCaseId, FirstExecution, Occurrences, Representative);
+    }
+}
+
+public static class FuzzSchedulingPolicy
+{
+    public const string AlgorithmId = "MAX_4096_OR_BUDGET_X_OPERATOR_COUNT_X_32_V1";
+
+    public static int ComputeIterationLimit(int budget, int operatorCount)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(budget, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(operatorCount, 1);
+        var scaled = checked((long)budget * operatorCount * 32);
+        if (scaled > int.MaxValue)
+        {
+            throw new ArgumentOutOfRangeException(nameof(budget), "Scheduler iteration limit exceeds Int32.");
+        }
+
+        return Math.Max(4_096, (int)scaled);
     }
 }

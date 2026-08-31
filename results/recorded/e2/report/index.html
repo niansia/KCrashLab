@@ -4,7 +4,7 @@ body{font-family:Segoe UI,system-ui,sans-serif;max-width:980px;margin:40px auto;
 <body><div class="banner">SIMULATED — NOT A REAL KERNEL CRASH BENCHMARK</div><main><h1>E2: stateful sequence versus single call</h1>
 <p class="muted">Paired deterministic trials against one synthetic target. The sequence-length cap is the only experimental variable.</p>
 <table><thead><tr><th>Mode</th><th>Maximum operations</th><th>Discoveries</th><th>Censored</th><th>Successful median [Q1, Q3]</th></tr></thead><tbody><tr><td>SINGLE_CALL</td><td>1</td><td>0/20</td><td>20</td><td>n/a [n/a, n/a]</td></tr>
-<tr><td>STATEFUL</td><td>6</td><td>11/20</td><td>9</td><td>181.0 [100.0, 216.5]</td></tr></tbody></table>
-<h2>Paired outcomes</h2><table><thead><tr><th>Both</th><th>Stateful only</th><th>Single-call only</th><th>Neither</th></tr></thead><tbody><tr><td>0</td><td>11</td><td>0</td><td>9</td></tr></tbody></table>
+<tr><td>STATEFUL</td><td>6</td><td>12/20</td><td>8</td><td>229.5 [139.3, 302.3]</td></tr></tbody></table>
+<h2>Paired outcomes</h2><table><thead><tr><th>Both</th><th>Stateful only</th><th>Single-call only</th><th>Neither</th></tr></thead><tbody><tr><td>0</td><td>12</td><td>0</td><td>8</td></tr></tbody></table>
 <p class="muted">The known synthetic signature requires RESET_STATE → SET_MODE(2) → SUBMIT_RECORD(declared length mismatch). Single-call mode cannot express that prerequisite chain. Kernel crashes, real-driver performance, and statistical significance are not claimed.</p>
 </main></body></html>

@@ -17,13 +17,14 @@ This ledger is the reviewer-facing boundary between implemented mechanisms, obse
 | C-01 | Case IR has deterministic canonical identities. | VERIFIED | Canonicalization tests and versioned Case IR schema. | User-mode contracts only. |
 | C-02 | Campaign recovery avoids a second dispatch after an ambiguous resume point. | VERIFIED | SQLite resume and fault-injection tests. | Does not yet cover every evidence-production state. |
 | C-03 | Evidence manifests detect modified, missing, and untracked files. | VERIFIED | Evidence and fuzz-artifact verifier tests. | Integrity is not authenticity; manifests are not signed. |
-| C-04 | The synthetic finding can be minimized while preserving an exact signature and 3/3 replay vote. | OBSERVED | `results/recorded/g3` and its SHA-256 manifest. | One deterministic synthetic target; no kernel inference. |
-| C-05 | Corpus admission and parent scheduling have separable effects in E1. | NOT ASSESSED | Requires a committed, verified four-arm E1 v2 bundle. | Existing E1 v1 evidence changed several factors and is LEGACY. |
-| C-06 | Stateful Case IR can represent a synthetic trigger that a one-operation cap cannot. | OBSERVED | `results/recorded/e2` and the E2 protocol. | Expressiveness sanity check, not a general performance comparison. |
-| C-07 | KCrashLab can recover a Windows VM after a real driver-induced crash and collect a stable dump. | NOT ASSESSED | Requires a successful `track-b-g1.ps1` run and verified sanitized bundle. | Automation source exists, but no real-lab evidence is checked in. |
-| C-08 | A real finding reproduces from an immutable clean checkpoint with the same signature. | NOT ASSESSED | Three cold replays, checkpoint identity, raw debugger output, and verified bundle. | A repeated bugcheck alone is insufficient. |
-| C-09 | Any finding is exploitable or security-impacting. | NOT ASSESSED | Requires a separately governed investigation. | Crashability is not exploitability. |
-| C-10 | KCrashLab is suitable for third-party driver testing. | OUT OF SCOPE | None. | Repository-owned synthetic targets only. |
+| C-04 | The deterministic G3 scheduler can discover the known synthetic signature under its recorded parameters. | OBSERVED | `results/recorded/g3`, its semantic verifier, and SHA-256 manifest. | One synthetic target and one fixed campaign; discovery latency is not a benchmark. |
+| C-05 | A known synthetic trigger can be minimized while preserving its exact signature and pass a 3/3 simulated replay vote. | OBSERVED | `results/recorded/minimization-replay`, including provenance-bearing `decision.json`, canonical simulator `environment.json`, minimized input, replay runs, semantic verifier, and SHA-256 manifest. | Deterministic simulator replay is not clean-checkpoint real-machine replay. |
+| C-06 | Corpus admission and parent scheduling have separately observable descriptive effects in E1. | OBSERVED | Committed, verified four-arm E1 v2 bundle at `results/recorded/e1`. | Fixed deterministic seed suite; no population-level or general superiority inference. |
+| C-07 | Stateful Case IR can represent and discover a synthetic trigger that a one-operation cap cannot represent. | OBSERVED | `results/recorded/e2` and the E2 protocol. | Expressiveness sanity check, not a general performance comparison. |
+| C-08 | KCrashLab can recover a Windows VM after a real driver-induced crash and collect a stable dump. | NOT ASSESSED | Requires a successful `track-b-g1.ps1` run and verified sanitized bundle. | Automation source exists, but no real-lab evidence is checked in. |
+| C-09 | A real finding reproduces from an immutable clean checkpoint with the same signature. | NOT ASSESSED | Three cold replays, checkpoint identity, raw debugger output, and verified bundle. | A repeated bugcheck alone is insufficient. |
+| C-10 | Any finding is exploitable or security-impacting. | NOT ASSESSED | Requires a separately governed investigation. | Crashability is not exploitability. |
+| C-11 | KCrashLab is suitable for third-party driver testing. | OUT OF SCOPE | None. | Repository-owned synthetic targets only. |
 
 ## Rules for changing the ledger
 
@@ -37,7 +38,7 @@ This ledger is the reviewer-facing boundary between implemented mechanisms, obse
 
 ## Evidence required for the first real-lab claim
 
-The first transition of C-07 or C-08 away from `NOT ASSESSED` requires all of the following in one sanitized release bundle:
+The first transition of C-08 or C-09 away from `NOT ASSESSED` requires all of the following in one sanitized release bundle:
 
 - repository-owned target driver source and exact binary SHA-256;
 - safe/vulnerable build-mode declaration and disposable-lab attestation;

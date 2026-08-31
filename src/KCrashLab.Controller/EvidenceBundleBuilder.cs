@@ -28,12 +28,42 @@ public sealed class EvidenceBundleBuilder
         CanonicalCase original,
         MinimizationResult minimization,
         ReplayDecision replay,
+        MinimizationReplayProvenance provenance,
         CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(bundleRoot);
+        ExperimentProvenanceBuilder.ValidateMinimizationReplay(provenance);
         if (campaign.State != CampaignState.Complete || campaign.Artifact is null || campaign.Analysis is null || campaign.Signature is null)
         {
             throw new InvalidOperationException("Only completed simulated findings can produce an evidence bundle.");
+        }
+
+        var expectedCampaignId = DeterministicIdentity.CreateGuid("campaign", provenance.Scenario, original.CaseId, provenance.CampaignSeed);
+        var expectedExperimentDigest = ExperimentProvenanceBuilder.M1ExperimentDefinitionDigest(
+            provenance.Scenario,
+            provenance.ScenarioFixtureSchemaVersion,
+            provenance.ScenarioFixtureDigestAlgorithm,
+            provenance.ScenarioFixtureDigest,
+            provenance.CampaignSeed,
+            original.CaseId,
+            campaign.Signature,
+            provenance.MaximumOracleAttempts,
+            replay.Policy,
+            original.Value.SchemaVersion);
+        var expectedMinimizerDigest = ExperimentProvenanceBuilder.M1MinimizerDefinitionDigest(
+            original.CaseId,
+            campaign.Signature,
+            provenance.MaximumOracleAttempts,
+            original.Value.SchemaVersion);
+        var expectedReplayDigest = ExperimentProvenanceBuilder.M1ReplayPolicyDefinitionDigest(campaign.Signature, replay.Policy);
+        if (campaign.CampaignId != expectedCampaignId
+            || !string.Equals(campaign.Scenario, provenance.Scenario, StringComparison.Ordinal)
+            || !MatchesSimulationEnvironment(campaign.CapabilityReport, provenance)
+            || !string.Equals(provenance.ExperimentDefinitionDigest, expectedExperimentDigest, StringComparison.Ordinal)
+            || !string.Equals(provenance.MinimizerDefinitionDigest, expectedMinimizerDigest, StringComparison.Ordinal)
+            || !string.Equals(provenance.ReplayPolicyDefinitionDigest, expectedReplayDigest, StringComparison.Ordinal))
+        {
+            throw new InvalidDataException("M1 provenance does not match the campaign, minimizer, and replay controls.");
         }
 
         var root = Path.GetFullPath(bundleRoot);
@@ -72,18 +102,26 @@ public sealed class EvidenceBundleBuilder
 
         await WriteJsonAsync(Path.Combine(root, "environment.json"), new
         {
-            schema_version = 1,
+            schema_version = 2,
             execution_mode = "SIMULATED",
-            backend = "simulated",
-            simulator_version = "1.0.0",
-            capability_report = campaign.CapabilityReport
+            backend = SimulationEvidenceContract.BackendId,
+            simulator_version = SimulationEvidenceContract.SimulatorVersion,
+            virtual_epoch_utc = SimulationEvidenceContract.VirtualEpochUtc,
+            scenario_fixture = new
+            {
+                schema_version = provenance.ScenarioFixtureSchemaVersion,
+                name = provenance.Scenario,
+                digest_algorithm = provenance.ScenarioFixtureDigestAlgorithm,
+                digest = provenance.ScenarioFixtureDigest
+            }
         }, cancellationToken).ConfigureAwait(false);
 
         await WriteJsonAsync(Path.Combine(root, "decision.json"), new
         {
-            schema_version = 1,
+            schema_version = 2,
             execution_mode = "SIMULATED",
             status = replay.Passed ? "SYNTHETIC_CONFIRMED" : "SYNTHETIC_FLAKY",
+            provenance,
             replay,
             minimization = new
             {
@@ -93,6 +131,7 @@ public sealed class EvidenceBundleBuilder
                 original_bytes = minimization.Original.CanonicalUtf8.Length,
                 minimized_bytes = minimization.Minimized.CanonicalUtf8.Length,
                 byte_reduction = minimization.ByteReduction,
+                maximum_oracle_attempts = provenance.MaximumOracleAttempts,
                 oracle_attempts = minimization.OracleAttempts,
                 stop_reason = minimization.StopReason
             },
@@ -139,7 +178,7 @@ public sealed class EvidenceBundleBuilder
         }
 
         var report = BuildReport(findingId, campaign, original, minimization, replay);
-        await WriteBytesAsync(Path.Combine(root, "report", "index.html"), Encoding.UTF8.GetBytes(report), cancellationToken).ConfigureAwait(false);
+        await WriteBytesAsync(Path.Combine(root, "report", "index.html"), ArtifactText.Encode(report), cancellationToken).ConfigureAwait(false);
         var entries = await EvidenceManifest.CreateAsync(root, cancellationToken).ConfigureAwait(false);
         return new EvidenceBuildResult(root, Path.Combine(root, EvidenceManifest.FileName), findingId.ToString("D"), campaign.Signature, entries.Count);
     }
@@ -149,9 +188,30 @@ public sealed class EvidenceBundleBuilder
         return campaign.Scenario;
     }
 
+    private static bool MatchesSimulationEnvironment(
+        CapabilityReport report,
+        MinimizationReplayProvenance provenance)
+    {
+        return report.ExecutionMode == "SIMULATED"
+            && report.ObservedAtUtc.ToUniversalTime().ToString("O", System.Globalization.CultureInfo.InvariantCulture)
+                == SimulationEvidenceContract.VirtualEpochUtc
+            && report.Evidence.TryGetValue("backend_contract", out var backend)
+            && backend == SimulationEvidenceContract.BackendId
+            && report.Evidence.TryGetValue("simulator_version", out var simulatorVersion)
+            && simulatorVersion == SimulationEvidenceContract.SimulatorVersion
+            && report.Evidence.TryGetValue("scenario_fixture_name", out var scenario)
+            && scenario == provenance.Scenario
+            && report.Evidence.TryGetValue("scenario_fixture_schema_version", out var schemaVersion)
+            && schemaVersion == provenance.ScenarioFixtureSchemaVersion.ToString(System.Globalization.CultureInfo.InvariantCulture)
+            && report.Evidence.TryGetValue("scenario_fixture_digest_algorithm", out var digestAlgorithm)
+            && digestAlgorithm == provenance.ScenarioFixtureDigestAlgorithm
+            && report.Evidence.TryGetValue("scenario_fixture_digest", out var digest)
+            && digest == provenance.ScenarioFixtureDigest;
+    }
+
     private static async Task WriteJsonAsync(string path, object value, CancellationToken cancellationToken)
     {
-        var bytes = JsonSerializer.SerializeToUtf8Bytes(value, ContractJson.Indented);
+        var bytes = ArtifactText.SerializeJson(value, ContractJson.Indented);
         await WriteBytesAsync(path, bytes, cancellationToken).ConfigureAwait(false);
     }
 
@@ -187,7 +247,7 @@ public sealed class EvidenceBundleBuilder
         ReplayDecision replay)
     {
         var signature = WebUtility.HtmlEncode(campaign.Signature);
-        return $$"""
+        return FormattableString.Invariant($$"""
             <!doctype html>
             <html lang="en">
             <head>
@@ -219,6 +279,6 @@ public sealed class EvidenceBundleBuilder
               </main>
             </body>
             </html>
-            """;
+            """);
     }
 }

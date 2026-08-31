@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Globalization;
 using System.Security.Cryptography;
@@ -14,21 +15,40 @@ public static class ExperimentProvenanceBuilder
     public const string Unspecified = "UNSPECIFIED";
     public const string Uncommitted = "UNCOMMITTED";
     public const string SourceCommitTime = "SOURCE_COMMIT_TIME";
+    public const string GitTreeDigestAlgorithm = "GIT_TREE_SHA256_V1";
 
     private const string DecisionStream = "SHA256_LANES_V1";
-    private const string TerminationRule = "BUDGET_OR_SCHEDULER_LIMIT_V1";
+    private const string TerminationRule = FuzzSchedulingPolicy.AlgorithmId;
     private const string EnergyRankingRule = "GREEDY_ENERGY_DIV_SELECTIONS_PLUS_ONE_THEN_LAST_SELECTED_THEN_CASE_ID_V1";
     private const string PairedSeedRule = "BASE_PLUS_TRIAL_MINUS_ONE_V1";
+    private const string MinimizerAlgorithm = "HIERARCHICAL_SEQUENCE_THEN_FIELDS_V1";
+    private const string ReplayAlgorithm = "SEQUENTIAL_EXACT_SIGNATURE_V1";
+    private const string SyntheticSignatureOracle = "SYNTHETIC_STATE_TARGET_EXACT_SIGNATURE_V1";
+    private const string SimulatedResetPolicy = "SIMULATED_CLEAN";
 
     private static readonly string[] SourceDirectories =
     [
-        ".github", "docs", "drivers", "samples", "schemas", "scripts", "src", "tests"
+        ".github",
+        "docs",
+        "drivers",
+        "samples",
+        "schemas",
+        "scripts",
+        "src",
+        "tests"
     ];
 
     private static readonly string[] SourceFiles =
     [
-        ".editorconfig", ".gitattributes", ".gitignore", "Directory.Build.props", "Directory.Packages.props",
-        "global.json", "KCrashLab.sln", "README.md", "SECURITY.md"
+        ".editorconfig",
+        ".gitattributes",
+        ".gitignore",
+        "Directory.Build.props",
+        "Directory.Packages.props",
+        "global.json",
+        "KCrashLab.sln",
+        "README.md",
+        "SECURITY.md"
     ];
 
     public static Task<ExperimentProvenance> ForFuzzAsync(
@@ -73,12 +93,64 @@ public static class ExperimentProvenanceBuilder
             E2Definition(result),
             cancellationToken);
 
+    public static async Task<MinimizationReplayProvenance> ForMinimizationReplayAsync(
+        string repositoryRoot,
+        ScenarioFixture scenarioFixture,
+        CanonicalCase original,
+        string targetSignature,
+        int maximumOracleAttempts,
+        ReplayPolicy replayPolicy,
+        string recordedAtUtc,
+        string gitCommit,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(scenarioFixture);
+        var scenarioFixtureDigest = ScenarioFixtureIdentity.DefinitionDigest(scenarioFixture);
+        var definition = M1Definition(
+            scenarioFixture.Name,
+            scenarioFixture.SchemaVersion,
+            SimulationEvidenceContract.ScenarioFixtureDigestAlgorithm,
+            scenarioFixtureDigest,
+            scenarioFixture.Seed,
+            original.CaseId,
+            targetSignature,
+            maximumOracleAttempts,
+            replayPolicy,
+            original.Value.SchemaVersion);
+        var common = await CreateAsync(
+            repositoryRoot,
+            recordedAtUtc,
+            gitCommit,
+            original.Value.SchemaVersion,
+            definition,
+            cancellationToken).ConfigureAwait(false);
+        return new MinimizationReplayProvenance(
+            common.RecordedAtUtc,
+            common.SourceCommitTimeUtc,
+            common.ReproducibleTimestampPolicy,
+            common.GitCommit,
+            common.SourceTreeDigest,
+            common.SourceTreeDigestAlgorithm,
+            common.ExperimentDefinitionDigest,
+            common.CaseSchemaVersion,
+            common.EngineVersion,
+            scenarioFixture.Name,
+            scenarioFixture.SchemaVersion,
+            SimulationEvidenceContract.ScenarioFixtureDigestAlgorithm,
+            scenarioFixtureDigest,
+            scenarioFixture.Seed,
+            maximumOracleAttempts,
+            M1MinimizerDefinitionDigest(original.CaseId, targetSignature, maximumOracleAttempts, original.Value.SchemaVersion),
+            M1ReplayPolicyDefinitionDigest(targetSignature, replayPolicy));
+    }
+
     public static ExperimentProvenance UnspecifiedForFuzz(FuzzCampaignResult result) =>
         new(
             Unspecified,
             Unspecified,
             Unspecified,
             Uncommitted,
+            Unspecified,
             Unspecified,
             DefinitionDigest(FuzzDefinition(result)),
             result.Corpus[0].TestCase.Value.SchemaVersion,
@@ -91,6 +163,7 @@ public static class ExperimentProvenanceBuilder
             Unspecified,
             Uncommitted,
             Unspecified,
+            Unspecified,
             DefinitionDigest(E1Definition(result)),
             1,
             EngineVersion);
@@ -102,9 +175,49 @@ public static class ExperimentProvenanceBuilder
             Unspecified,
             Uncommitted,
             Unspecified,
+            Unspecified,
             DefinitionDigest(E2Definition(result)),
             1,
             EngineVersion);
+
+    public static MinimizationReplayProvenance UnspecifiedForMinimizationReplay(
+        ScenarioFixture scenarioFixture,
+        CanonicalCase original,
+        string targetSignature,
+        int maximumOracleAttempts,
+        ReplayPolicy replayPolicy)
+    {
+        ArgumentNullException.ThrowIfNull(scenarioFixture);
+        var scenarioFixtureDigest = ScenarioFixtureIdentity.DefinitionDigest(scenarioFixture);
+        return new(
+            Unspecified,
+            Unspecified,
+            Unspecified,
+            Uncommitted,
+            Unspecified,
+            Unspecified,
+            M1ExperimentDefinitionDigest(
+                scenarioFixture.Name,
+                scenarioFixture.SchemaVersion,
+                SimulationEvidenceContract.ScenarioFixtureDigestAlgorithm,
+                scenarioFixtureDigest,
+                scenarioFixture.Seed,
+                original.CaseId,
+                targetSignature,
+                maximumOracleAttempts,
+                replayPolicy,
+                original.Value.SchemaVersion),
+            original.Value.SchemaVersion,
+            EngineVersion,
+            scenarioFixture.Name,
+            scenarioFixture.SchemaVersion,
+            SimulationEvidenceContract.ScenarioFixtureDigestAlgorithm,
+            scenarioFixtureDigest,
+            scenarioFixture.Seed,
+            maximumOracleAttempts,
+            M1MinimizerDefinitionDigest(original.CaseId, targetSignature, maximumOracleAttempts, original.Value.SchemaVersion),
+            M1ReplayPolicyDefinitionDigest(targetSignature, replayPolicy));
+    }
 
     public static string FuzzDefinitionDigest(
         string executionMode,
@@ -161,6 +274,96 @@ public static class ExperimentProvenanceBuilder
             statefulMaximumSequenceLength,
             caseSchemaVersion));
 
+    public static string M1ExperimentDefinitionDigest(
+        string scenario,
+        int scenarioFixtureSchemaVersion,
+        string scenarioFixtureDigestAlgorithm,
+        string scenarioFixtureDigest,
+        long campaignSeed,
+        string originalCaseId,
+        string targetSignature,
+        int maximumOracleAttempts,
+        ReplayPolicy replayPolicy,
+        int caseSchemaVersion) =>
+        DefinitionDigest(M1Definition(
+            scenario,
+            scenarioFixtureSchemaVersion,
+            scenarioFixtureDigestAlgorithm,
+            scenarioFixtureDigest,
+            campaignSeed,
+            originalCaseId,
+            targetSignature,
+            maximumOracleAttempts,
+            replayPolicy,
+            caseSchemaVersion));
+
+    public static string M1MinimizerDefinitionDigest(
+        string originalCaseId,
+        string targetSignature,
+        int maximumOracleAttempts,
+        int caseSchemaVersion) =>
+        DefinitionDigest(M1MinimizerDefinition(
+            originalCaseId,
+            targetSignature,
+            maximumOracleAttempts,
+            caseSchemaVersion));
+
+    public static string M1ReplayPolicyDefinitionDigest(
+        string targetSignature,
+        ReplayPolicy replayPolicy) =>
+        DefinitionDigest(M1ReplayDefinition(targetSignature, replayPolicy));
+
+    public static async Task<string> ResolveGitCommitAsync(
+        string repositoryRoot,
+        string recordedAtUtc,
+        string? requestedGitCommit,
+        CancellationToken cancellationToken)
+    {
+        var gitCommit = requestedGitCommit;
+        if (string.IsNullOrWhiteSpace(gitCommit))
+        {
+            gitCommit = recordedAtUtc == SourceCommitTime
+                ? await ReadGitOutputAsync(repositoryRoot, ["rev-parse", "--verify", "HEAD"], cancellationToken).ConfigureAwait(false)
+                : Uncommitted;
+        }
+
+        ValidateGitCommit(gitCommit);
+        gitCommit = gitCommit == Uncommitted ? gitCommit : gitCommit.ToLowerInvariant();
+        if (recordedAtUtc == SourceCommitTime)
+        {
+            await ValidateCanonicalGitStateAsync(repositoryRoot, gitCommit, cancellationToken).ConfigureAwait(false);
+        }
+
+        return gitCommit;
+    }
+
+    public static async Task ValidateCanonicalGitStateAsync(
+        string repositoryRoot,
+        string gitCommit,
+        CancellationToken cancellationToken)
+    {
+        ValidateGitCommit(gitCommit);
+        if (gitCommit == Uncommitted)
+        {
+            throw new InvalidDataException("SOURCE_COMMIT_TIME provenance requires a committed source revision.");
+        }
+
+        var head = await ReadGitOutputAsync(repositoryRoot, ["rev-parse", "--verify", "HEAD"], cancellationToken).ConfigureAwait(false);
+        if (!string.Equals(head, gitCommit, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidDataException("Canonical provenance requires git_commit to equal the checked-out HEAD.");
+        }
+
+        var status = await ReadGitOutputAsync(
+            repositoryRoot,
+            ["status", "--porcelain=v1", "--untracked-files=all"],
+            cancellationToken).ConfigureAwait(false);
+        if (status.Length != 0)
+        {
+            throw new InvalidDataException("Canonical provenance requires a clean Git working tree.");
+        }
+    }
+
     public static ExperimentProvenance ParseAndValidate(JsonElement element)
     {
         var provenance = new ExperimentProvenance(
@@ -173,10 +376,35 @@ public static class ExperimentProvenanceBuilder
                 : Unspecified,
             element.GetProperty("git_commit").GetString() ?? throw new InvalidDataException("git_commit is null."),
             element.GetProperty("source_tree_digest").GetString() ?? throw new InvalidDataException("source_tree_digest is null."),
+            element.GetProperty("source_tree_digest_algorithm").GetString() ?? throw new InvalidDataException("source_tree_digest_algorithm is null."),
             element.GetProperty("experiment_definition_digest").GetString() ?? throw new InvalidDataException("experiment_definition_digest is null."),
             element.GetProperty("case_schema_version").GetInt32(),
             element.GetProperty("engine_version").GetString() ?? throw new InvalidDataException("engine_version is null."));
         Validate(provenance);
+        return provenance;
+    }
+
+    public static MinimizationReplayProvenance ParseAndValidateMinimizationReplay(JsonElement element)
+    {
+        var provenance = new MinimizationReplayProvenance(
+            element.GetProperty("recorded_at_utc").GetString() ?? throw new InvalidDataException("recorded_at_utc is null."),
+            element.GetProperty("source_commit_time_utc").GetString() ?? throw new InvalidDataException("source_commit_time_utc is null."),
+            element.GetProperty("reproducible_timestamp_policy").GetString() ?? throw new InvalidDataException("reproducible_timestamp_policy is null."),
+            element.GetProperty("git_commit").GetString() ?? throw new InvalidDataException("git_commit is null."),
+            element.GetProperty("source_tree_digest").GetString() ?? throw new InvalidDataException("source_tree_digest is null."),
+            element.GetProperty("source_tree_digest_algorithm").GetString() ?? throw new InvalidDataException("source_tree_digest_algorithm is null."),
+            element.GetProperty("experiment_definition_digest").GetString() ?? throw new InvalidDataException("experiment_definition_digest is null."),
+            element.GetProperty("case_schema_version").GetInt32(),
+            element.GetProperty("engine_version").GetString() ?? throw new InvalidDataException("engine_version is null."),
+            element.GetProperty("scenario").GetString() ?? throw new InvalidDataException("scenario is null."),
+            element.GetProperty("scenario_fixture_schema_version").GetInt32(),
+            element.GetProperty("scenario_fixture_digest_algorithm").GetString() ?? throw new InvalidDataException("scenario_fixture_digest_algorithm is null."),
+            element.GetProperty("scenario_fixture_digest").GetString() ?? throw new InvalidDataException("scenario_fixture_digest is null."),
+            element.GetProperty("campaign_seed").GetInt64(),
+            element.GetProperty("maximum_oracle_attempts").GetInt32(),
+            element.GetProperty("minimizer_definition_digest").GetString() ?? throw new InvalidDataException("minimizer_definition_digest is null."),
+            element.GetProperty("replay_policy_definition_digest").GetString() ?? throw new InvalidDataException("replay_policy_definition_digest is null."));
+        ValidateMinimizationReplay(provenance);
         return provenance;
     }
 
@@ -194,13 +422,51 @@ public static class ExperimentProvenanceBuilder
         if (provenance.ReproducibleTimestampPolicy == SourceCommitTime
             && provenance.RecordedAtUtc != provenance.SourceCommitTimeUtc)
             throw new InvalidDataException("SOURCE_COMMIT_TIME policy requires equal artifact and commit timestamps.");
+        if (provenance.ReproducibleTimestampPolicy == SourceCommitTime
+            && (provenance.GitCommit == Uncommitted
+                || provenance.RecordedAtUtc == Unspecified
+                || provenance.SourceCommitTimeUtc == Unspecified))
+            throw new InvalidDataException("SOURCE_COMMIT_TIME policy requires a committed source revision and resolved commit timestamp.");
         ValidateGitCommit(provenance.GitCommit);
         ValidateDigestOrUnspecified(provenance.SourceTreeDigest, "source_tree_digest");
+        if ((provenance.SourceTreeDigest == Unspecified && provenance.SourceTreeDigestAlgorithm != Unspecified)
+            || (provenance.SourceTreeDigest != Unspecified && provenance.SourceTreeDigestAlgorithm != GitTreeDigestAlgorithm))
+        {
+            throw new InvalidDataException("source_tree_digest_algorithm does not match the source-tree digest semantics.");
+        }
+
         ValidateDigest(provenance.ExperimentDefinitionDigest, "experiment_definition_digest");
         if (provenance.CaseSchemaVersion != 1 || provenance.EngineVersion != EngineVersion)
         {
             throw new InvalidDataException("Provenance contains an unsupported Case IR or engine version.");
         }
+    }
+
+    public static void ValidateMinimizationReplay(MinimizationReplayProvenance provenance)
+    {
+        ArgumentNullException.ThrowIfNull(provenance);
+        Validate(new ExperimentProvenance(
+            provenance.RecordedAtUtc,
+            provenance.SourceCommitTimeUtc,
+            provenance.ReproducibleTimestampPolicy,
+            provenance.GitCommit,
+            provenance.SourceTreeDigest,
+            provenance.SourceTreeDigestAlgorithm,
+            provenance.ExperimentDefinitionDigest,
+            provenance.CaseSchemaVersion,
+            provenance.EngineVersion));
+        if (string.IsNullOrWhiteSpace(provenance.Scenario)
+            || provenance.ScenarioFixtureSchemaVersion != 1
+            || provenance.ScenarioFixtureDigestAlgorithm != SimulationEvidenceContract.ScenarioFixtureDigestAlgorithm
+            || provenance.CampaignSeed < 0
+            || provenance.MaximumOracleAttempts < 1)
+        {
+            throw new InvalidDataException("M1 provenance contains invalid experiment controls.");
+        }
+
+        ValidateDigest(provenance.ScenarioFixtureDigest, "scenario_fixture_digest");
+        ValidateDigest(provenance.MinimizerDefinitionDigest, "minimizer_definition_digest");
+        ValidateDigest(provenance.ReplayPolicyDefinitionDigest, "replay_policy_definition_digest");
     }
 
     private static async Task<ExperimentProvenance> CreateAsync(
@@ -212,18 +478,33 @@ public static class ExperimentProvenanceBuilder
         CancellationToken cancellationToken)
     {
         ValidateGitCommit(gitCommit);
+        var timestampPolicy = recordedAtUtc == SourceCommitTime ? SourceCommitTime
+            : recordedAtUtc == Unspecified ? Unspecified : "WALL_CLOCK";
+        if (timestampPolicy == SourceCommitTime)
+        {
+            await ValidateCanonicalGitStateAsync(repositoryRoot, gitCommit, cancellationToken).ConfigureAwait(false);
+        }
+
         var sourceCommitTime = gitCommit == Uncommitted
             ? Unspecified
             : await ReadCommitTimeAsync(repositoryRoot, gitCommit, cancellationToken).ConfigureAwait(false);
-        var timestampPolicy = recordedAtUtc == SourceCommitTime ? SourceCommitTime
-            : recordedAtUtc == Unspecified ? Unspecified : "WALL_CLOCK";
         var artifactTime = recordedAtUtc == SourceCommitTime ? sourceCommitTime : recordedAtUtc;
+        var sourceTreeDigest = gitCommit == Uncommitted
+            ? Unspecified
+            : await SourceTreeDigestAsync(repositoryRoot, gitCommit, cancellationToken).ConfigureAwait(false);
+        var sourceTreeDigestAlgorithm = gitCommit == Uncommitted ? Unspecified : GitTreeDigestAlgorithm;
+        if (timestampPolicy == SourceCommitTime)
+        {
+            await ValidateCanonicalGitStateAsync(repositoryRoot, gitCommit, cancellationToken).ConfigureAwait(false);
+        }
+
         var provenance = new ExperimentProvenance(
             artifactTime,
             sourceCommitTime,
             timestampPolicy,
             gitCommit,
-            await SourceTreeDigestAsync(repositoryRoot, cancellationToken).ConfigureAwait(false),
+            sourceTreeDigest,
+            sourceTreeDigestAlgorithm,
             DefinitionDigest(definition),
             caseSchemaVersion,
             EngineVersion);
@@ -233,7 +514,21 @@ public static class ExperimentProvenanceBuilder
 
     private static async Task<string> ReadCommitTimeAsync(string repositoryRoot, string gitCommit, CancellationToken cancellationToken)
     {
-        var start = new ProcessStartInfo("git", $"show -s --format=%cI {gitCommit}")
+        var output = await ReadGitOutputAsync(
+            repositoryRoot,
+            ["show", "-s", "--format=%cI", gitCommit],
+            cancellationToken).ConfigureAwait(false);
+        if (!DateTimeOffset.TryParse(output, out var parsed))
+            throw new InvalidDataException("Unable to resolve source commit timestamp.");
+        return parsed.ToUniversalTime().ToString("O", System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private static async Task<string> ReadGitOutputAsync(
+        string repositoryRoot,
+        IReadOnlyList<string> arguments,
+        CancellationToken cancellationToken)
+    {
+        var start = new ProcessStartInfo("git")
         {
             WorkingDirectory = repositoryRoot,
             RedirectStandardOutput = true,
@@ -241,66 +536,182 @@ public static class ExperimentProvenanceBuilder
             UseShellExecute = false,
             CreateNoWindow = true
         };
-        using var process = Process.Start(start) ?? throw new InvalidOperationException("Unable to start git for provenance.");
-        var output = (await process.StandardOutput.ReadToEndAsync(cancellationToken).ConfigureAwait(false)).Trim();
-        await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-        if (process.ExitCode != 0 || !DateTimeOffset.TryParse(output, out var parsed))
-            throw new InvalidDataException("Unable to resolve source commit timestamp.");
-        return parsed.ToUniversalTime().ToString("O", System.Globalization.CultureInfo.InvariantCulture);
-    }
-
-    public static async Task<string> SourceTreeDigestAsync(string repositoryRoot, CancellationToken cancellationToken)
-    {
-        var root = Path.GetFullPath(repositoryRoot);
-        var files = new List<string>();
-        foreach (var directoryName in SourceDirectories)
+        foreach (var argument in arguments)
         {
-            var directory = Path.Combine(root, directoryName);
-            if (!Directory.Exists(directory))
-            {
-                continue;
-            }
-
-            files.AddRange(Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories)
-                .Where(static path => !HasIgnoredSegment(path)));
+            start.ArgumentList.Add(argument);
         }
 
-        files.AddRange(SourceFiles
-            .Select(name => Path.Combine(root, name))
-            .Where(File.Exists));
-        var ordered = files
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Select(path => new
-            {
-                FullPath = path,
-                RelativePath = Path.GetRelativePath(root, path).Replace('\\', '/')
-            })
-            .OrderBy(static item => item.RelativePath, StringComparer.Ordinal)
+        using var process = Process.Start(start) ?? throw new InvalidOperationException("Unable to start git for provenance.");
+        var outputTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
+        var errorTask = process.StandardError.ReadToEndAsync(cancellationToken);
+        await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+        var output = (await outputTask.ConfigureAwait(false)).Trim();
+        var error = (await errorTask.ConfigureAwait(false)).Trim();
+        if (process.ExitCode != 0)
+        {
+            throw new InvalidDataException(error.Length == 0
+                ? "Git provenance command failed."
+                : $"Git provenance command failed: {error}");
+        }
+
+        return output;
+    }
+
+    private static async Task<byte[]> ReadGitBytesAsync(
+        string repositoryRoot,
+        IReadOnlyList<string> arguments,
+        CancellationToken cancellationToken)
+    {
+        var start = new ProcessStartInfo("git")
+        {
+            WorkingDirectory = repositoryRoot,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+        foreach (var argument in arguments)
+        {
+            start.ArgumentList.Add(argument);
+        }
+
+        using var process = Process.Start(start) ?? throw new InvalidOperationException("Unable to start git for provenance.");
+        await using var output = new MemoryStream();
+        var outputTask = process.StandardOutput.BaseStream.CopyToAsync(output, 131_072, cancellationToken);
+        var errorTask = process.StandardError.ReadToEndAsync(cancellationToken);
+        await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+        await outputTask.ConfigureAwait(false);
+        var error = (await errorTask.ConfigureAwait(false)).Trim();
+        if (process.ExitCode != 0)
+        {
+            throw new InvalidDataException(error.Length == 0
+                ? "Git provenance command failed."
+                : $"Git provenance command failed: {error}");
+        }
+
+        return output.ToArray();
+    }
+
+    public static async Task<string> SourceTreeDigestAsync(
+        string repositoryRoot,
+        string gitCommit,
+        CancellationToken cancellationToken)
+    {
+        ValidateGitCommit(gitCommit);
+        if (gitCommit == Uncommitted)
+        {
+            throw new InvalidDataException("A Git object ID is required for source-tree hashing.");
+        }
+
+        var root = Path.GetFullPath(repositoryRoot);
+        var listing = await ReadGitBytesAsync(
+            root,
+            ["ls-tree", "-r", "-z", "--full-tree", gitCommit],
+            cancellationToken).ConfigureAwait(false);
+        var entries = ParseGitTree(listing)
+            .Where(static entry => IsSourcePath(entry.Path))
+            .OrderBy(static entry => entry.Path, StringComparer.Ordinal)
             .ToArray();
-        if (ordered.Length == 0 || ordered.Length > 10_000)
+        if (entries.Length == 0 || entries.Length > 10_000)
         {
             throw new InvalidDataException("Source tree file count is outside the provenance limit.");
         }
 
         using var aggregate = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-        foreach (var file in ordered)
+        aggregate.AppendData(Encoding.ASCII.GetBytes(GitTreeDigestAlgorithm + "\0"));
+        var blobHashes = new Dictionary<string, byte[]>(StringComparer.Ordinal);
+        long totalBlobBytes = 0;
+        foreach (var entry in entries)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var pathBytes = Encoding.UTF8.GetBytes(file.RelativePath + "\0");
-            aggregate.AppendData(pathBytes);
-            await using var stream = new FileStream(file.FullPath, FileMode.Open, FileAccess.Read, FileShare.Read, 131_072, FileOptions.Asynchronous | FileOptions.SequentialScan);
-            var fileHash = await SHA256.HashDataAsync(stream, cancellationToken).ConfigureAwait(false);
-            aggregate.AppendData(fileHash);
+            if (entry.Type != "blob")
+            {
+                throw new InvalidDataException($"Unsupported Git tree entry type '{entry.Type}' at '{entry.Path}'.");
+            }
+
+            if (!blobHashes.TryGetValue(entry.ObjectId, out var blobHash))
+            {
+                var blob = await ReadGitBytesAsync(
+                    root,
+                    ["cat-file", "blob", entry.ObjectId],
+                    cancellationToken).ConfigureAwait(false);
+                if (blob.Length > 67_108_864 || totalBlobBytes > 536_870_912L - blob.Length)
+                {
+                    throw new InvalidDataException("Source tree blob size is outside the provenance limit.");
+                }
+
+                totalBlobBytes += blob.Length;
+                blobHash = SHA256.HashData(blob);
+                blobHashes.Add(entry.ObjectId, blobHash);
+            }
+
+            AppendLengthPrefixed(aggregate, Encoding.ASCII.GetBytes(entry.Mode));
+            AppendLengthPrefixed(aggregate, entry.PathBytes);
+            aggregate.AppendData(blobHash);
         }
 
         return Convert.ToHexString(aggregate.GetHashAndReset()).ToLowerInvariant();
     }
 
-    private static bool HasIgnoredSegment(string path)
+    private static List<GitTreeEntry> ParseGitTree(ReadOnlySpan<byte> listing)
     {
-        var segments = path.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-        return segments.Any(static segment => segment is "bin" or "obj" or ".git" or "artifacts" or "results" or "TestResults");
+        var entries = new List<GitTreeEntry>();
+        var offset = 0;
+        var strictUtf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+        while (offset < listing.Length)
+        {
+            var tabRelative = listing[offset..].IndexOf((byte)'\t');
+            if (tabRelative < 0)
+            {
+                throw new InvalidDataException("Git tree output is missing a path separator.");
+            }
+
+            var tab = offset + tabRelative;
+            var nulRelative = listing[(tab + 1)..].IndexOf((byte)0);
+            if (nulRelative < 0)
+            {
+                throw new InvalidDataException("Git tree output is missing a path terminator.");
+            }
+
+            var nul = tab + 1 + nulRelative;
+            var header = Encoding.ASCII.GetString(listing[offset..tab]);
+            var headerParts = header.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (headerParts.Length != 3)
+            {
+                throw new InvalidDataException("Git tree output has an invalid entry header.");
+            }
+
+            var pathBytes = listing[(tab + 1)..nul].ToArray();
+            var path = strictUtf8.GetString(pathBytes);
+            entries.Add(new GitTreeEntry(headerParts[0], headerParts[1], headerParts[2], path, pathBytes));
+            offset = nul + 1;
+        }
+
+        return entries;
     }
+
+    private static bool IsSourcePath(string path)
+    {
+        var selected = SourceFiles.Contains(path, StringComparer.Ordinal)
+            || SourceDirectories.Any(directory => path.StartsWith(directory + "/", StringComparison.Ordinal));
+        if (!selected)
+        {
+            return false;
+        }
+
+        return !path.Split('/').Any(static segment =>
+            segment is "bin" or "obj" or ".git" or "artifacts" or "results" or "TestResults");
+    }
+
+    private static void AppendLengthPrefixed(IncrementalHash aggregate, ReadOnlySpan<byte> value)
+    {
+        Span<byte> length = stackalloc byte[4];
+        BinaryPrimitives.WriteInt32BigEndian(length, value.Length);
+        aggregate.AppendData(length);
+        aggregate.AppendData(value);
+    }
+
+    private sealed record GitTreeEntry(string Mode, string Type, string ObjectId, string Path, byte[] PathBytes);
 
     private static string DefinitionDigest(object definition) =>
         Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(definition, ContractJson.Compact))).ToLowerInvariant();
@@ -434,6 +845,63 @@ public static class ExperimentProvenanceBuilder
             case_schema_version = caseSchemaVersion,
             engine_version = EngineVersion
         };
+
+    private static object M1Definition(
+        string scenario,
+        int scenarioFixtureSchemaVersion,
+        string scenarioFixtureDigestAlgorithm,
+        string scenarioFixtureDigest,
+        long campaignSeed,
+        string originalCaseId,
+        string targetSignature,
+        int maximumOracleAttempts,
+        ReplayPolicy replayPolicy,
+        int caseSchemaVersion) => new
+        {
+            experiment = "M1_MINIMIZATION_REPLAY_V1",
+            execution_mode = "SIMULATED",
+            scenario,
+            scenario_fixture = new
+            {
+                schema_version = scenarioFixtureSchemaVersion,
+                digest_algorithm = scenarioFixtureDigestAlgorithm,
+                digest = scenarioFixtureDigest
+            },
+            campaign_seed = campaignSeed,
+            original_case_id = originalCaseId,
+            target_signature = targetSignature,
+            minimizer = M1MinimizerDefinition(originalCaseId, targetSignature, maximumOracleAttempts, caseSchemaVersion),
+            replay = M1ReplayDefinition(targetSignature, replayPolicy),
+            case_schema_version = caseSchemaVersion,
+            engine_version = EngineVersion
+        };
+
+    private static object M1MinimizerDefinition(
+        string originalCaseId,
+        string targetSignature,
+        int maximumOracleAttempts,
+        int caseSchemaVersion) => new
+        {
+            algorithm = MinimizerAlgorithm,
+            oracle = SyntheticSignatureOracle,
+            original_case_id = originalCaseId,
+            target_signature = targetSignature,
+            maximum_oracle_attempts = maximumOracleAttempts,
+            stop_rule = "ATTEMPT_BUDGET_OR_LOCAL_MINIMUM_V1",
+            case_schema_version = caseSchemaVersion,
+            engine_version = EngineVersion
+        };
+
+    private static object M1ReplayDefinition(string targetSignature, ReplayPolicy replayPolicy) => new
+    {
+        algorithm = ReplayAlgorithm,
+        oracle = SyntheticSignatureOracle,
+        target_signature = targetSignature,
+        attempts = replayPolicy.Attempts,
+        required_matches = replayPolicy.RequiredMatches,
+        reset_policy = SimulatedResetPolicy,
+        engine_version = EngineVersion
+    };
 
     private static string[] MutationOperatorIds() =>
         DefaultMutationOperators.Create().Select(static item => item.OperatorId).ToArray();

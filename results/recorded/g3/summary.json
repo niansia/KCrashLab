@@ -1,29 +1,40 @@
 {
   "schema_version": 1,
   "execution_mode": "SIMULATED",
-  "strategy": "NOVELTY_ONLY_ENERGY_V2",
+  "strategy": "NOVELTY_ONLY_ENERGY_RANKED_V2",
   "campaign_seed": 20260831,
   "budget": 256,
   "executions": 256,
+  "termination_reason": "BUDGET_REACHED",
+  "scheduling_policy": "MAX_4096_OR_BUDGET_X_OPERATOR_COUNT_X_32_V1",
+  "scheduling_iterations": 274,
+  "scheduling_limit": 40960,
+  "duplicate_candidate_skips": 229,
+  "empty_candidate_polls": 19,
+  "candidate_enumeration": "HASH_RANKED_V1",
+  "max_candidates": 64,
   "seed_case_id": "18e1be2d985316a623355afa5a9a8854d8b9361ec07eb878a51aeac302a0148a",
-  "corpus_count": 88,
-  "coverage_count": 77,
-  "raw_synthetic_failures": 48,
+  "corpus_count": 92,
+  "coverage_count": 99,
+  "raw_synthetic_failures": 32,
   "exact_signatures": 1,
   "provenance": {
-    "recorded_at_utc": "2026-08-31T00:00:00Z",
-    "git_commit": "55a65c44612c26b7e2c126ce2d22d04186d3634f",
-    "source_tree_digest": "bfc398f4c438ee2bda73a9ca9a34e714563015f593d64c23fd495a9e1cea2065",
-    "experiment_definition_digest": "c95b09b6e5eec59244a1ccbe076caf94fc2390328cd01d51bb0e711b16189698",
+    "recorded_at_utc": "2026-08-31T17:17:21.0000000\u002B00:00",
+    "source_commit_time_utc": "2026-08-31T17:17:21.0000000\u002B00:00",
+    "reproducible_timestamp_policy": "SOURCE_COMMIT_TIME",
+    "git_commit": "55c31b25902157cddc9014bb9fdaa598bede40a2",
+    "source_tree_digest": "bc0d06a2759e2429b0fec5683f3102e4644628f30b3fe6032a21a233d1333338",
+    "source_tree_digest_algorithm": "GIT_TREE_SHA256_V1",
+    "experiment_definition_digest": "fb29620cd6916a155bf60023b2bed22344410732ce1da4f26e8da3aa7dbd745f",
     "case_schema_version": 1,
-    "engine_version": "1.3.0-sim"
+    "engine_version": "1.4.0-sim"
   },
   "findings": [
     {
       "signature": "c16b0923faeafce6e8196416e81c29d76ea01fa379e562fa7c785b373f6cf1db",
-      "first_case_id": "98d91fc6927492885a8c5dc14f7be6a93934037c399321bb5243ef2243c51a43",
-      "first_execution": 175,
-      "occurrences": 48
+      "first_case_id": "7e5df15191ffa63d274aa3affb06965d40a7bca4636c2c7c691910df90a8065f",
+      "first_execution": 211,
+      "occurrences": 32
     }
   ],
   "claims": {

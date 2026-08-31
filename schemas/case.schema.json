@@ -72,7 +72,12 @@
       "propertyNames": { "maxLength": 128 },
       "properties": {
         "workers": { "type": "integer", "minimum": 1, "maximum": 16 },
-        "delays_us": { "type": "array", "maxItems": 64, "items": { "type": "integer", "minimum": 0, "maximum": 10000000 } }
+        "delays_us": {
+          "$comment": "The runtime semantic validator additionally requires one delay per operation; Draft 2020-12 has no portable cross-array length equality keyword.",
+          "type": "array",
+          "maxItems": 64,
+          "items": { "type": "integer", "minimum": 0, "maximum": 10000000 }
+        }
       },
       "additionalProperties": false
     }

@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "execution_mode": "SIMULATED",
+  "attempt": 3,
+  "classification": "MATCH",
+  "observed_signature": "c16b0923faeafce6e8196416e81c29d76ea01fa379e562fa7c785b373f6cf1db",
+  "reset_policy": "SIMULATED_CLEAN"
+}

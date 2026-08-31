@@ -28,4 +28,11 @@ internal static class TestPaths
         Directory.CreateDirectory(path);
         return path;
     }
+
+    public static void AssertLfUtf8NoBom(string path)
+    {
+        var bytes = File.ReadAllBytes(path);
+        Assert.False(bytes.Length >= 3 && bytes[0] == 0xef && bytes[1] == 0xbb && bytes[2] == 0xbf);
+        Assert.DoesNotContain((byte)'\r', bytes);
+    }
 }

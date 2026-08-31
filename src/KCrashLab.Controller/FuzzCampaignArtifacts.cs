@@ -59,6 +59,7 @@ public static class FuzzCampaignArtifacts
             budget = result.Budget,
             executions = result.Executions,
             termination_reason = result.TerminationReason,
+            scheduling_policy = result.SchedulingPolicy,
             scheduling_iterations = result.SchedulingIterations,
             scheduling_limit = result.SchedulingLimit,
             duplicate_candidate_skips = result.DuplicateCandidateSkips,
@@ -107,7 +108,7 @@ public static class FuzzCampaignArtifacts
                 .Append(Csv(execution.Signature)).Append('\n');
         }
 
-        await WriteBytesAsync(Path.Combine(root, "metrics.csv"), Encoding.UTF8.GetBytes(metrics.ToString()), cancellationToken).ConfigureAwait(false);
+        await WriteBytesAsync(Path.Combine(root, "metrics.csv"), ArtifactText.Encode(metrics.ToString()), cancellationToken).ConfigureAwait(false);
 
         foreach (var corpusEntry in result.Corpus)
         {
@@ -142,7 +143,7 @@ public static class FuzzCampaignArtifacts
 
         await WriteBytesAsync(
             Path.Combine(root, "report", "index.html"),
-            Encoding.UTF8.GetBytes(BuildReport(result)),
+            ArtifactText.Encode(BuildReport(result)),
             cancellationToken).ConfigureAwait(false);
         var entries = await EvidenceManifest.CreateAsync(root, cancellationToken).ConfigureAwait(false);
         return new FuzzArtifactBuildResult(root, entries.Count, result.Corpus.Count, result.Findings.Count);
@@ -200,13 +201,20 @@ public static class FuzzCampaignArtifacts
                 errors.Add("summary.json contains invalid budget or execution counts.");
             }
             var terminationReason = summaryRoot.GetProperty("termination_reason").GetString();
+            var schedulingPolicy = summaryRoot.GetProperty("scheduling_policy").GetString();
             var schedulingIterations = summaryRoot.GetProperty("scheduling_iterations").GetInt32();
             var schedulingLimit = summaryRoot.GetProperty("scheduling_limit").GetInt32();
+            var expectedSchedulingLimit = FuzzSchedulingPolicy.ComputeIterationLimit(
+                budget,
+                DefaultMutationOperators.Create().Count);
             if (terminationReason is not ("BUDGET_REACHED" or "SCHEDULER_ITERATION_LIMIT_REACHED")
+                || schedulingPolicy != FuzzSchedulingPolicy.AlgorithmId
                 || schedulingIterations < 0 || schedulingIterations > schedulingLimit
                 || (terminationReason == "BUDGET_REACHED") != (executions == budget)
+                || (terminationReason == "SCHEDULER_ITERATION_LIMIT_REACHED" && schedulingIterations != schedulingLimit)
+                || schedulingLimit != expectedSchedulingLimit
                 || summaryRoot.GetProperty("candidate_enumeration").GetString() != MutationCandidateSampling.AlgorithmId
-                || summaryRoot.GetProperty("max_candidates").GetInt32() < 1
+                || summaryRoot.GetProperty("max_candidates").GetInt32() != MutationCandidateSampling.DefaultMaximumCandidatesPerOperator
                 || summaryRoot.GetProperty("duplicate_candidate_skips").GetInt32() < 0
                 || summaryRoot.GetProperty("empty_candidate_polls").GetInt32() < 0)
             {
@@ -387,7 +395,7 @@ public static class FuzzCampaignArtifacts
         var firstFindingText = firstFinding is null
             ? "No synthetic finding in budget"
             : $"Execution {firstFinding.FirstExecution}: {WebUtility.HtmlEncode(firstFinding.Signature)}";
-        return $$"""
+        return FormattableString.Invariant($$"""
             <!doctype html>
             <html lang="en">
             <head>
@@ -421,7 +429,7 @@ public static class FuzzCampaignArtifacts
               </main>
             </body>
             </html>
-            """;
+            """);
     }
 
     private static string Csv(string? value)
@@ -437,7 +445,7 @@ public static class FuzzCampaignArtifacts
     }
 
     private static Task WriteJsonAsync(string path, object value, CancellationToken cancellationToken) =>
-        WriteBytesAsync(path, JsonSerializer.SerializeToUtf8Bytes(value, ContractJson.Indented), cancellationToken);
+        WriteBytesAsync(path, ArtifactText.SerializeJson(value, ContractJson.Indented), cancellationToken);
 
     private static async Task WriteBytesAsync(
         string path,

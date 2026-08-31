@@ -1,6 +1,6 @@
 # Implementation status
 
-Updated: 2026-08-31
+Updated: 2026-09-01
 
 ## Working now
 
@@ -23,9 +23,10 @@ Updated: 2026-08-31
 - Paired E1 2×2 policy ablation crossing keep-all/novelty-only admission with uniform/energy-ranked parent selection; operator and candidate selection remain identical across arms.
 - Censoring-aware E1 Kaplan–Meier discovery curves plus paired factorial contrasts, raw CSV, claims limits, and manifest verification.
 - Paired E2 stateful-versus-single-call experiment with sequence length as the only changed variable.
-- Versioned experiment provenance: distinct source-commit/artifact time semantics, deterministic timestamp policy, Git state, source-tree digest, definition digest, Case IR version, and engine version.
+- Versioned experiment provenance: distinct source-commit/artifact time semantics, deterministic timestamp policy, clean `HEAD == git_commit` binding for canonical records, `GIT_TREE_SHA256_V1` object-database source digest, definition digest, Case IR version, and engine version. M1 additionally records and verifies canonical simulator-environment, scenario-fixture, minimizer, and replay-policy digests.
+- Deterministic evidence text uses LF, UTF-8 without BOM, invariant culture, and ordinal ordering; generated JSON, CSV, HTML, reports, and manifests are contract-tested against platform newline drift.
 - Fuzz termination telemetry distinguishes budget completion from scheduler-limit termination and records duplicate/empty scheduling work.
-- Draft 2020-12 Case Schema/runtime parity tests execute a real schema validator over checked-in cases, randomized property order, and generated valid/invalid boundaries for depth, integers, strings, lineage, fields, mutation metadata, operations, and schedules. The byte-size envelope is tested separately as a runtime transport precondition.
+- Draft 2020-12 structural Case Schema/runtime parity tests execute a real schema validator over checked-in cases, randomized property order, and generated valid/invalid boundaries for depth, integers, Unicode rune lengths, lineage, fields, mutation metadata, operations, and schedules. Cross-field schedule-length equality and the byte-size envelope are tested separately as runtime semantic and transport invariants. Raw byte parsing rejects malformed UTF-8 before canonicalization.
 - Exact .NET SDK pinning, locked NuGet dependency graphs, immutable Action revisions, and Windows 2022 plus Ubuntu 24.04 simulation CI lanes.
 - Fault injection for ambiguous journal commits, duplicate/colliding events, CAS interruption/corruption, manifest loss/truncation, and invalid virtual-clock jumps.
 - Fail-closed clean reviewer packaging using `git archive`, ZIP inspection, and separate recorded-results packaging.
@@ -36,14 +37,16 @@ Updated: 2026-08-31
 
 ## Last checked-in simulation baseline
 
+- Evidence source commit: `55c31b25902157cddc9014bb9fdaa598bede40a2`; `GIT_TREE_SHA256_V1` source-tree digest: `bc0d06a2759e2429b0fec5683f3102e4644628f30b3fe6032a21a233d1333338`. Recorded evidence is committed in its child evidence/release revision to avoid circular self-reference; exact reruns must check out the source commit.
 - Release build: zero warnings and zero errors.
-- The initial simulation preview recorded 49 passing tests. New Track B tests require a fresh Windows/.NET run before this count is updated; repository text must not imply that an unavailable runner executed them.
+- Latest protected-main CI baseline: 66 tests passed on Windows 2022, and the cross-platform simulation lane passed on Ubuntu 24.04. The final evidence-freeze source passes 73 tests locally with exact .NET 8.0.100 on Windows; both canonical evidence runs produced byte-identical manifests. This does not constitute WDK/Hyper-V Track B runtime validation.
 - All eight controller scenarios reach the expected classification.
 - Evidence corruption and untracked files are rejected.
 - Fuzz campaign corruption and untracked files are rejected; identical campaigns produce identical manifests.
-- Safe state seed discovers the known synthetic signature at execution 47 with the checked-in 256-execution fixture.
-- The checked-in E1 v1 record is legacy provenance, not evidence for the implemented v2 policy ablation; canonical v2 results are pending regeneration from a committed tree.
-- Recorded E2 expressiveness validation: stateful 20/20 discoveries versus single-call 0/20 under paired synthetic trials; by construction, the finding requires a three-operation chain.
+- The checked-in G3 current-policy record discovers the known synthetic signature at execution 211 in its 256-execution fixture, with 99 semantic feedback elements and 92 retained corpus cases.
+- Recorded E1 v2 four-arm outcomes are 14/20 keep-all energy-ranked, 7/20 keep-all uniform, 18/20 novelty-only energy-ranked, and 12/20 novelty-only uniform discoveries. These are descriptive paired-seed observations, not a general superiority claim.
+- Recorded E2 expressiveness validation: stateful 12/20 discoveries versus single-call 0/20 under paired synthetic trials; by construction, only the stateful arm can represent the required three-operation chain.
+- The recorded minimization/replay bundle reduces the known synthetic trigger from 14 to 3 operations and 552 to 188 canonical bytes while preserving the exact signature in 3/3 simulated replays.
 - Duplicate JSON keys, unknown contract members, invalid state transitions, unsafe paths, and real-backend acquisition fail closed.
 - Generated case, scenario, capability, environment, finding, run, fuzz campaign, and E1 experiment documents pass their JSON Schemas.
 

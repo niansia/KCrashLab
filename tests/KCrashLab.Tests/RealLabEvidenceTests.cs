@@ -46,6 +46,8 @@ public sealed class RealLabEvidenceTests
             Assert.Contains("WITHHELD_SENSITIVE_KERNEL_MEMORY", await File.ReadAllTextAsync(Path.Combine(temporary, "private-artifacts.json")));
             Assert.False(File.Exists(Path.Combine(temporary, "crash", "windbg.raw.txt")));
             Assert.True(File.Exists(Path.Combine(temporary, "crash", "windbg.sanitized.txt")));
+            TestPaths.AssertLfUtf8NoBom(Path.Combine(temporary, "crash", "windbg.sanitized.txt"));
+            TestPaths.AssertLfUtf8NoBom(Path.Combine(temporary, "report", "index.html"));
 
             await File.WriteAllBytesAsync(Path.Combine(temporary, "leaked.DMP"), [1, 2, 3]);
             var leaked = await RealLabEvidence.VerifyAsync(temporary, CancellationToken.None);

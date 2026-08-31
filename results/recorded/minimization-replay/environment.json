@@ -1,0 +1,13 @@
+{
+  "schema_version": 2,
+  "execution_mode": "SIMULATED",
+  "backend": "SIMULATED_BACKEND_V1",
+  "simulator_version": "1.0.0",
+  "virtual_epoch_utc": "2026-08-31T00:00:00.0000000\u002B00:00",
+  "scenario_fixture": {
+    "schema_version": 1,
+    "name": "dump-ready",
+    "digest_algorithm": "SCENARIO_JSON_SHA256_V1",
+    "digest": "5adccac3bcd7956b18b87c8d73c5202334176bae32c10175ebd05f5d5fa6c746"
+  }
+}

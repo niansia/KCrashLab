@@ -1,0 +1,1 @@
+{"operations":[{"ioctl":"RESET_STATE"},{"fields":{"mode":2},"ioctl":"SET_MODE"},{"fields":{"declared_len":1},"ioctl":"SUBMIT_RECORD"}],"schema_version":1,"seed":41821,"target":"kcl.state"}
