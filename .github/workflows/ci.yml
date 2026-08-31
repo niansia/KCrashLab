@@ -2,6 +2,7 @@ name: simulation-ci
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 permissions:
@@ -36,7 +37,7 @@ jobs:
         run: dotnet build KCrashLab.sln --configuration Release --no-restore
 
       - name: Audit dependencies
-        run: dotnet list KCrashLab.sln package --vulnerable --include-transitive
+        run: dotnet list "${{ github.workspace }}/KCrashLab.sln" package --vulnerable --include-transitive
 
       - name: Test simulation contracts
         run: dotnet test KCrashLab.sln --configuration Release --no-build --logger "trx;LogFileName=simulation.trx"
