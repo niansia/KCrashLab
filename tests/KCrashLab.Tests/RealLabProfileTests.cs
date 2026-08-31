@@ -1,3 +1,4 @@
+using System.Globalization;
 using KCrashLab.Contracts;
 using KCrashLab.Simulation;
 
@@ -35,7 +36,10 @@ public sealed class RealLabProfileTests
     public void DumpRequiresPositiveUnchangedLengthAndExclusiveRead()
     {
         var tracker = new DumpStabilityTracker(TimeSpan.FromSeconds(10));
-        var start = DateTimeOffset.Parse("2026-08-31T00:00:00Z");
+        var start = DateTimeOffset.Parse(
+            "2026-08-31T00:00:00Z",
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.RoundtripKind);
 
         Assert.Equal(DumpReadiness.Missing, tracker.Observe(start, null, false));
         Assert.Equal(DumpReadiness.Growing, tracker.Observe(start, 1_024, false));

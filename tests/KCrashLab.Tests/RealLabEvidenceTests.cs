@@ -1,8 +1,9 @@
+using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 using KCrashLab.Controller;
 using KCrashLab.Contracts;
 using KCrashLab.Domain;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace KCrashLab.Tests;
 
@@ -34,7 +35,9 @@ public sealed class RealLabEvidenceTests
                 .Select(attempt => new RealLabReplayRecord(attempt, "MATCH", signature, Hash((char)('a' + attempt)), Hash('7'), Hash('8')))
                 .ToArray();
             var input = new RealLabEvidenceInput(original, original, Hash('d'), Hash('e'), Hash('f'), Hash('6'),
-                "Windows 11 build 26100", Hash('9'), Hash('a'), RawHash(raw), Hash('7'), Hash('8'), raw, replays, DateTimeOffset.Parse("2026-08-31T00:00:00Z"), new string('1', 40));
+                "Windows 11 build 26100", Hash('9'), Hash('a'), RawHash(raw), Hash('7'), Hash('8'), raw, replays,
+                DateTimeOffset.Parse("2026-08-31T00:00:00Z", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind),
+                new string('1', 40));
             await RealLabEvidence.BuildAsync(temporary, input, CancellationToken.None);
             var verified = await RealLabEvidence.VerifyAsync(temporary, CancellationToken.None);
 

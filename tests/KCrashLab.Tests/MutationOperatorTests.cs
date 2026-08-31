@@ -1,4 +1,6 @@
+using System.Globalization;
 using System.Text;
+using KCrashLab.Contracts;
 using KCrashLab.Domain;
 
 namespace KCrashLab.Tests;
@@ -11,7 +13,7 @@ public sealed class MutationOperatorTests
         var candidates = Enumerable.Range(0, 128)
             .Select(index => new CanonicalCase(
                 new TestCase(1, "kcl.state", index, [], null, null, null),
-                index.ToString("x64"),
+                index.ToString("x64", CultureInfo.InvariantCulture),
                 []))
             .ToArray();
 

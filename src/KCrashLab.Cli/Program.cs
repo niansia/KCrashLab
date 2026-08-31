@@ -528,6 +528,8 @@ internal static class KCrashCli
               kcrash campaign run --scenario <name> --case <case.json> --output <directory>
               kcrash evidence verify <bundle-directory>
               kcrash fuzz run --seed <safe.case.json> --strategy <novelty|random> --budget <executions> --campaign-seed <integer> --recorded-at <UTC|UNSPECIFIED> --output <directory>
+                novelty = novelty-only corpus admission + energy parent selection
+                random  = keep-all corpus admission + uniform parent selection
               kcrash fuzz verify <campaign-directory>
               kcrash experiment e1 --seed <safe.case.json> --budget <executions> --trials <count> --base-seed <integer> --recorded-at <UTC|UNSPECIFIED> --output <directory>
               kcrash experiment e2 --seed <single-call.case.json> --budget <executions> --trials <count> --base-seed <integer> --recorded-at <UTC|UNSPECIFIED> --output <directory>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>KCrashLab E1 simulated strategy experiment</title>
+  <title>KCrashLab E1 simulated 2x2 policy ablation</title>
   <style>
     body{font-family:Segoe UI,system-ui,sans-serif;max-width:980px;margin:40px auto;padding:0 20px;color:#17202a;background:#f4f7f9}
     .banner{background:#8b1e1e;color:#fff;padding:18px 22px;border-radius:8px;font-weight:750;letter-spacing:.04em}
@@ -14,11 +14,13 @@
 <body>
   <div class="banner">SIMULATED — NOT A REAL KERNEL CRASH BENCHMARK</div>
   <main>
-    <h1>E1: mutation strategy</h1>
-    <p class="muted">Paired deterministic trials against one synthetic state-machine target. This report makes no claim about real drivers or statistical significance.</p>
+    <h1>E1: 2×2 policy ablation</h1>
+    <p class="muted">Paired deterministic trials against one synthetic state-machine target. Corpus admission (keep-all/novelty-only) is crossed with parent selection (uniform/energy). Operator and candidate selection remain uniform in every arm. This report makes no claim about real drivers or statistical significance.</p>
     <p>Budget: <strong>256</strong> executions per trial; paired trials: <strong>20</strong>; base seed: <code>20260831</code>.</p>
-    <table><thead><tr><th>Strategy</th><th>Discoveries</th><th>Censored</th><th>Median [Q1, Q3] first finding*</th></tr></thead><tbody><tr><td><code>NOVELTY_GUIDED_DETERMINISTIC_V1</code></td><td>20/20</td><td>0</td><td>70.0 [59.5, 71.0]</td></tr>
-<tr><td><code>UNIFORM_RANDOM_VALID_MUTATION_V1</code></td><td>5/20</td><td>15</td><td>40.0 [26.0, 54.0]</td></tr></tbody></table>
+    <table><thead><tr><th>Strategy</th><th>Discoveries</th><th>Censored</th><th>Median [Q1, Q3] first finding*</th></tr></thead><tbody><tr><td><code>KEEP_ALL_ENERGY_V2</code></td><td>14/20</td><td>6</td><td>111.0 [81.0, 127.8]</td></tr>
+<tr><td><code>KEEP_ALL_UNIFORM_V2</code></td><td>5/20</td><td>15</td><td>121.0 [91.0, 210.0]</td></tr>
+<tr><td><code>NOVELTY_ONLY_ENERGY_V2</code></td><td>13/20</td><td>7</td><td>125.0 [97.0, 173.0]</td></tr>
+<tr><td><code>NOVELTY_ONLY_UNIFORM_V2</code></td><td>16/20</td><td>4</td><td>129.0 [87.3, 184.8]</td></tr></tbody></table>
     <p class="muted">* Quantiles use linear interpolation and include successful trials only. No-finding trials are right-censored at the fixed budget and listed separately.</p>
     <h2>Censoring-aware discovery curve</h2>
     <svg class="chart" viewBox="0 0 920 390" role="img" aria-label="Cumulative discovery probability by execution">
@@ -26,13 +28,18 @@
   <line x1="64" y1="180" x2="864" y2="180" stroke="#d8e0e5" stroke-dasharray="5 5"/>
   <text x="38" y="334" font-size="13">0</text><text x="28" y="184" font-size="13">0.5</text><text x="28" y="35" font-size="13">1.0</text>
   <text x="60" y="356" font-size="13">0</text><text x="830" y="356" font-size="13">256</text>
-  <path d="M 64 330 H 210.875 V 270 H 226.5 V 255 H 257.75 V 240 H 264 V 225 H 279.625 V 180 H 285.875 V 75 H 289 V 30 H 864 V 30 H 864" fill="none" stroke="#116466" stroke-width="4"/><path d="M 64 330 H 107.75 V 315 H 145.25 V 300 H 189 V 285 H 232.75 V 270 H 376.5 V 255 H 864 V 255 H 864" fill="none" stroke="#c25b30" stroke-width="4"/>
-  <line x1="90" y1="374" x2="125" y2="374" stroke="#116466" stroke-width="4"/><text x="132" y="379" font-size="13">novelty-guided</text>
-  <line x1="300" y1="374" x2="335" y2="374" stroke="#c25b30" stroke-width="4"/><text x="342" y="379" font-size="13">uniform-random valid mutation</text>
+  <path d="M 64 330 H 139 V 315 H 182.75 V 300 H 254.625 V 285 H 317.125 V 255 H 357.75 V 240 H 367.125 V 225 H 454.625 V 210 H 460.875 V 180 H 464 V 165 H 617.125 V 150 H 729.625 V 135 H 779.625 V 120 H 864 V 120 H 864" fill="none" stroke="#8c4f9e" stroke-width="4"/><path d="M 64 330 H 126.5 V 315 H 348.375 V 300 H 442.125 V 285 H 720.25 V 270 H 770.25 V 255 H 864 V 255 H 864" fill="none" stroke="#c25b30" stroke-width="4"/><path d="M 64 330 H 139 V 315 H 182.75 V 300 H 317.125 V 285 H 367.125 V 255 H 445.25 V 240 H 454.625 V 225 H 460.875 V 210 H 526.5 V 195 H 604.625 V 180 H 610.875 V 165 H 635.875 V 150 H 670.25 V 135 H 864 V 135 H 864" fill="none" stroke="#116466" stroke-width="4"/><path d="M 64 330 H 135.875 V 315 H 160.875 V 300 H 285.875 V 285 H 310.875 V 270 H 345.25 V 255 H 385.875 V 240 H 420.25 V 225 H 464 V 210 H 470.25 V 195 H 517.125 V 180 H 567.125 V 165 H 629.625 V 150 H 676.5 V 135 H 723.375 V 120 H 764 V 105 H 807.75 V 90 H 864 V 90 H 864" fill="none" stroke="#2878b5" stroke-width="4"/>
+  <line x1="70" y1="374" x2="100" y2="374" stroke="#c25b30" stroke-width="4"/><text x="106" y="379" font-size="12">keep/uniform</text>
+  <line x1="260" y1="374" x2="290" y2="374" stroke="#8c4f9e" stroke-width="4"/><text x="296" y="379" font-size="12">keep/energy</text>
+  <line x1="445" y1="374" x2="475" y2="374" stroke="#2878b5" stroke-width="4"/><text x="481" y="379" font-size="12">novelty/uniform</text>
+  <line x1="650" y1="374" x2="680" y2="374" stroke="#116466" stroke-width="4"/><text x="686" y="379" font-size="12">novelty/energy</text>
 </svg>
     <p class="muted">The step curve is 1 − Kaplan–Meier survival. Censored trials remain in the risk set through execution 256.</p>
-    <h2>Paired outcomes</h2>
-    <table><thead><tr><th>Both</th><th>Novelty only</th><th>Random only</th><th>Neither</th></tr></thead><tbody><tr><td>5</td><td>15</td><td>0</td><td>0</td></tr></tbody></table>
+    <h2>Planned paired contrasts</h2>
+    <table><thead><tr><th>Contrast</th><th>Left</th><th>Right</th><th>Both</th><th>Left only</th><th>Right only</th><th>Neither</th></tr></thead><tbody><tr><td><code>ADMISSION_AT_UNIFORM_PARENT</code></td><td><code>NOVELTY_ONLY_UNIFORM_V2</code></td><td><code>KEEP_ALL_UNIFORM_V2</code></td><td>3</td><td>13</td><td>2</td><td>2</td></tr>
+<tr><td><code>ADMISSION_AT_ENERGY_PARENT</code></td><td><code>NOVELTY_ONLY_ENERGY_V2</code></td><td><code>KEEP_ALL_ENERGY_V2</code></td><td>11</td><td>2</td><td>3</td><td>4</td></tr>
+<tr><td><code>PARENT_AT_KEEP_ALL_ADMISSION</code></td><td><code>KEEP_ALL_ENERGY_V2</code></td><td><code>KEEP_ALL_UNIFORM_V2</code></td><td>5</td><td>9</td><td>0</td><td>6</td></tr>
+<tr><td><code>PARENT_AT_NOVELTY_ADMISSION</code></td><td><code>NOVELTY_ONLY_ENERGY_V2</code></td><td><code>NOVELTY_ONLY_UNIFORM_V2</code></td><td>11</td><td>2</td><td>5</td><td>2</td></tr></tbody></table>
     <p class="muted">These counts are descriptive. Statistical significance and external validity are not assessed.</p>
   </main>
 </body>

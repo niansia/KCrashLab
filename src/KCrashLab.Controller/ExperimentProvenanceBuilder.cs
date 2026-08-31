@@ -1,8 +1,10 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using KCrashLab.Contracts;
+using KCrashLab.Domain;
 
 namespace KCrashLab.Controller;
 
@@ -193,7 +195,8 @@ public static class ExperimentProvenanceBuilder
         if (provenance.ReproducibleTimestampPolicy is not (Unspecified or SourceCommitTime or "WALL_CLOCK"))
             throw new InvalidDataException("Unsupported reproducible_timestamp_policy.");
         if (provenance.RecordedAtUtc != Unspecified && provenance.SourceCommitTimeUtc != Unspecified
-            && DateTimeOffset.Parse(provenance.RecordedAtUtc) < DateTimeOffset.Parse(provenance.SourceCommitTimeUtc))
+            && DateTimeOffset.Parse(provenance.RecordedAtUtc, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind)
+                < DateTimeOffset.Parse(provenance.SourceCommitTimeUtc, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind))
             throw new InvalidDataException("recorded_at_utc cannot precede source_commit_time_utc.");
         if (provenance.ReproducibleTimestampPolicy == SourceCommitTime
             && provenance.RecordedAtUtc != provenance.SourceCommitTimeUtc)

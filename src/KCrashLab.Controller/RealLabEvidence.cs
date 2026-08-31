@@ -38,6 +38,22 @@ public sealed record RealLabEvidenceVerification(bool IsValid, int VerifiedFiles
 
 public static class RealLabEvidence
 {
+    private static readonly int[] RequiredReplayAttempts = [1, 2, 3];
+    private static readonly string[] RequiredEvidencePaths =
+    [
+        "finding.json", "environment.json", "decision.json", "private-artifacts.json",
+        "crash/analysis.json", "crash/windbg.sanitized.txt", "inputs/original.case.json",
+        "inputs/minimized.case.json", "report/index.html"
+    ];
+    private static readonly string[] RequiredEnvironmentHashes =
+    [
+        "driver_sha256", "vm_identity_sha256", "checkpoint_identity_sha256", "authorization_sha256", "symbols_sha256"
+    ];
+    private static readonly string[] EvidenceLimitations =
+    [
+        "Repository-owned synthetic driver only.", "Exploitability was not assessed.", "Raw dump withheld by default."
+    ];
+
     public static async Task BuildAsync(string root, RealLabEvidenceInput input, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(input);
@@ -58,7 +74,7 @@ public static class RealLabEvidence
         if (input.GitCommit is not { Length: 40 } || input.GitCommit.Any(static item => item is not (>= '0' and <= '9') and not (>= 'a' and <= 'f')))
             throw new InvalidDataException("Git commit must be a lowercase full 40-character object ID.");
         if (input.Replays.Count != 3) throw new InvalidDataException("A public real-lab bundle requires exactly three cold replay records.");
-        if (!input.Replays.Select(static replay => replay.Attempt).Order().SequenceEqual(new[] { 1, 2, 3 }))
+        if (!input.Replays.Select(static replay => replay.Attempt).Order().SequenceEqual(RequiredReplayAttempts))
             throw new InvalidDataException("Cold replay attempts must be numbered 1, 2, and 3 exactly once.");
         foreach (var replay in input.Replays)
         {
@@ -93,7 +109,7 @@ public static class RealLabEvidence
         await WriteJson(Path.Combine(fullRoot, "decision.json"), new
         {
             schema_version = 1, execution_mode = "REAL_LAB", status = "CONFIRMED", replay_policy = "3/3_COLD_CHECKPOINT",
-            replays = input.Replays, limitations = new[] { "Repository-owned synthetic driver only.", "Exploitability was not assessed.", "Raw dump withheld by default." }
+            replays = input.Replays, limitations = EvidenceLimitations
         }, cancellationToken).ConfigureAwait(false);
         await WriteJson(Path.Combine(fullRoot, "crash", "analysis.json"), analysis, cancellationToken).ConfigureAwait(false);
         await WriteText(Path.Combine(fullRoot, "crash", "windbg.sanitized.txt"), BuildSanitizedWindbg(analysis), cancellationToken).ConfigureAwait(false);
@@ -121,7 +137,7 @@ public static class RealLabEvidence
         if (Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories).Any(static path => path.EndsWith(".dmp", StringComparison.OrdinalIgnoreCase)))
             errors.Add("Public real-lab bundles must not contain a memory dump.");
         var verifiedPaths = manifest.Verified.Select(static item => item.RelativePath).ToHashSet(StringComparer.Ordinal);
-        foreach (var required in new[] { "finding.json", "environment.json", "decision.json", "private-artifacts.json", "crash/analysis.json", "crash/windbg.sanitized.txt", "inputs/original.case.json", "inputs/minimized.case.json", "report/index.html" })
+        foreach (var required in RequiredEvidencePaths)
             if (!verifiedPaths.Contains(required)) errors.Add($"Required real-lab evidence file is missing: {required}");
         try
         {
@@ -139,7 +155,7 @@ public static class RealLabEvidence
             var minimized = CaseCanonicalizer.Parse(await File.ReadAllBytesAsync(Path.Combine(root, "inputs", "minimized.case.json"), cancellationToken));
             if (finding.RootElement.GetProperty("execution_mode").GetString() != "REAL_LAB") errors.Add("finding execution_mode is not REAL_LAB.");
             if (environment.RootElement.GetProperty("execution_mode").GetString() != "REAL_LAB") errors.Add("environment execution_mode is not REAL_LAB.");
-            foreach (var property in new[] { "driver_sha256", "vm_identity_sha256", "checkpoint_identity_sha256", "authorization_sha256", "symbols_sha256" })
+            foreach (var property in RequiredEnvironmentHashes)
                 if (!IsHash(environment.RootElement.GetProperty(property).GetString())) errors.Add($"environment {property} is not a lowercase SHA-256.");
             if (!IsHash(privateArtifacts.RootElement.GetProperty("dump").GetProperty("sha256").GetString())
                 || !IsHash(privateArtifacts.RootElement.GetProperty("windbg_raw").GetProperty("sha256").GetString())
@@ -158,7 +174,7 @@ public static class RealLabEvidence
                 || decision.RootElement.GetProperty("replay_policy").GetString() != "3/3_COLD_CHECKPOINT")
                 errors.Add("Decision status or replay policy is invalid.");
             if (replays.Length != 3
-                || !replays.Select(item => item.GetProperty("attempt").GetInt32()).Order().SequenceEqual(new[] { 1, 2, 3 })
+                || !replays.Select(item => item.GetProperty("attempt").GetInt32()).Order().SequenceEqual(RequiredReplayAttempts)
                 || replays.Any(item => item.GetProperty("classification").GetString() != "MATCH" || item.GetProperty("signature").GetString() != signature))
                 errors.Add("Decision does not contain three matching cold replays.");
             if (replays.Any(item => !IsHash(item.GetProperty("dump_sha256").GetString())

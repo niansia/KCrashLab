@@ -13,10 +13,10 @@ public sealed class TrackBContractSyncTests
         Assert.Contains("CTL_CODE(KCL_DEVICE_TYPE, 0x802, METHOD_BUFFERED, FILE_READ_DATA | FILE_WRITE_DATA)", header);
         Assert.Contains("CTL_CODE(KCL_DEVICE_TYPE, 0x803, METHOD_BUFFERED, FILE_READ_DATA | FILE_WRITE_DATA)", header);
         Assert.Contains("CTL_CODE(KCL_DEVICE_TYPE, 0x804, METHOD_BUFFERED, FILE_READ_DATA | FILE_WRITE_DATA)", header);
-        Assert.Equal(CtlCode(0x801), GuestCaseCompiler.Echo);
-        Assert.Equal(CtlCode(0x802), GuestCaseCompiler.ResetState);
-        Assert.Equal(CtlCode(0x803), GuestCaseCompiler.SetMode);
-        Assert.Equal(CtlCode(0x804), GuestCaseCompiler.SubmitRecord);
+        Assert.Equal(GuestCaseCompiler.Echo, CtlCode(0x801));
+        Assert.Equal(GuestCaseCompiler.ResetState, CtlCode(0x802));
+        Assert.Equal(GuestCaseCompiler.SetMode, CtlCode(0x803));
+        Assert.Equal(GuestCaseCompiler.SubmitRecord, CtlCode(0x804));
     }
 
     [Fact]

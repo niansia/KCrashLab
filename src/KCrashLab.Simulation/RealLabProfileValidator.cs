@@ -36,7 +36,7 @@ public static partial class RealLabProfileValidator
         return new RealLabValidationResult(errors.Count == 0, errors);
     }
 
-    private static void RequireGuid(string? value, string name, ICollection<string> errors)
+    private static void RequireGuid(string? value, string name, List<string> errors)
     {
         if (!Guid.TryParseExact(value, "D", out _) || value != value?.ToLowerInvariant()) errors.Add($"{name} must be a lowercase canonical GUID.");
     }
@@ -75,7 +75,7 @@ public sealed class DumpStabilityTracker
 
     public DumpStabilityTracker(TimeSpan requiredStableDuration)
     {
-        if (requiredStableDuration <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(requiredStableDuration));
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(requiredStableDuration, TimeSpan.Zero);
         this.requiredStableDuration = requiredStableDuration;
     }
 

@@ -42,7 +42,7 @@ public static partial class RealWindbgParser
             warnings);
     }
 
-    private static IReadOnlyList<string> ParseFrames(string raw)
+    private static List<string> ParseFrames(string raw)
     {
         var frames = new List<string>();
         var inStack = false;
