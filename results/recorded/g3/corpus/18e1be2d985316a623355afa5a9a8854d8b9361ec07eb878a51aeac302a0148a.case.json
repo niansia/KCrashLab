@@ -1,1 +1,0 @@
-{"operations":[{"input":"","ioctl":"RESET_STATE"},{"fields":{"mode":0},"ioctl":"SET_MODE"},{"fields":{"declared_len":4,"payload":"AAAA"},"ioctl":"SUBMIT_RECORD"}],"schedule":{"delays_us":[0,0,0],"workers":1},"schema_version":1,"seed":1001,"target":"kcl.state"}

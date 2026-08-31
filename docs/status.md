@@ -2,48 +2,51 @@
 
 Updated: 2026-08-31
 
-## Working now
+Release label: Research Preview v0.1
 
-- Capability probe with `AVAILABLE`, `UNAVAILABLE`, `UNVERIFIED`, and `BLOCKED` states.
-- Case IR v1 validation, canonical JSON, and stable SHA-256 case IDs.
-- Typed campaign lifecycle backed by an append-only SQLite journal.
-- Resume from `RUNNING` without a second dispatch.
-- `ILabBackend` plus eight deterministic, virtual-time simulator scenarios.
-- A future Hyper-V backend skeleton that always fails closed.
-- Versioned synthetic triage parser, stack normalization, signature v1, and exact grouping primitive.
-- Sequence delta debugging demonstrated from 14 to 3 operations.
-- Hierarchical minimization reduces the same fixture from 552 to 188 canonical bytes by shrinking schedule, optional fields, strings, and integers while preserving the signature.
-- Deterministic 3/3 replay policy with infrastructure errors excluded from the vote.
-- Replay voting can be used as a probabilistic minimization oracle for flaky synthetic targets.
-- Content-addressed artifact copy, SHA-256 manifest, semantic bundle verifier, and static report.
-- Deterministic boundary scalar, payload block, and sequence insert/delete/swap mutation operators with lineage.
-- Energy-ranked novelty corpus driven by synthetic semantic feedback.
-- Exact-signature finding deduplication and deterministic fuzz campaign runner.
-- Verifiable fuzz artifacts containing corpus, per-execution metrics, coverage, findings, manifest, and static report.
-- Paired E1 experiment runner comparing novelty-guided scheduling with a uniform-random valid-mutation baseline; censored trials, median/IQR, raw CSV, claims limits, and manifest verification are preserved.
-- Censoring-aware E1 Kaplan–Meier discovery curve plus paired outcome summary.
-- Paired E2 stateful-versus-single-call experiment with sequence length as the only changed variable.
-- Versioned experiment provenance: recording time, Git state, source-tree digest, definition digest, Case IR version, and engine version.
-- Fault injection for ambiguous journal commits, duplicate/colliding events, CAS interruption/corruption, manifest loss/truncation, and invalid virtual-clock jumps.
-- Fail-closed clean reviewer packaging using `git archive`, ZIP inspection, and separate recorded-results packaging.
-- Safe CI that builds and tests simulation only; dependency audit treats NuGet advisories as errors.
+## Implemented
 
-## Verified locally
+- Read-only host capability probe with `AVAILABLE`, `UNAVAILABLE`, `UNVERIFIED`, and `BLOCKED` states.
+- Case IR v1 validation, canonical JSON, stable SHA-256 identities, and explicit mutation lineage.
+- Typed campaign lifecycle backed by an append-only SQLite event journal.
+- Resume from `RUNNING` after an ambiguous commit without a second dispatch.
+- `ILabBackend`, eight deterministic simulator scenarios, and a virtual clock with no test sleeps.
+- Contract-only Hyper-V backend that always fails closed.
+- Versioned synthetic triage parser, stack normalization, Signature v1, and exact grouping.
+- Sequence and hierarchical minimization with signature-preserving replay.
+- Deterministic replay voting with infrastructure failures excluded from the denominator.
+- Content-addressed artifact storage, exact-byte manifest, static report, and semantic verifier.
+- Boundary scalar, payload block, sequence insert/delete/swap operators, and sequence-length policy.
+- Shared policy-driven fuzz engine with explicit corpus-admission, parent, operator, and candidate policies.
+- Independent SHA-256-derived decision lanes for reproducible scheduling.
+- Four-arm E1 2×2 ablation, right censoring, Kaplan–Meier curve, paired contrasts, raw CSV, and claims limits.
+- E2 single-call/stateful expressiveness validation.
+- Versioned provenance binding source, experiment definition, Case IR, engine, recording time, and source commit.
+- Fault injection for journal ambiguity/collision, CAS interruption/corruption, manifest loss/truncation, and clock bounds.
+- Fail-closed reviewer packaging through `git archive` with generated results packaged separately.
+- Windows CI for restore, build, dependency audit, tests, safe end-to-end runs, artifact verification, and packaging.
+
+## Verified for this release
 
 - Release build: zero warnings and zero errors.
 - Tests: 49 passed, 0 failed.
-- All eight controller scenarios reach the expected classification.
-- Evidence corruption and untracked files are rejected.
-- Fuzz campaign corruption and untracked files are rejected; identical campaigns produce identical manifests.
-- Safe state seed discovers the known synthetic signature at execution 47 with the checked-in 256-execution fixture.
-- Recorded E1 run: novelty-guided 20/20 discoveries versus valid-mutation random 5/20 under paired 256-execution synthetic trials; no real-driver or significance claim is made.
-- Recorded E2 run: stateful 20/20 discoveries versus single-call 0/20 under paired synthetic trials; the finding requires a three-operation chain.
-- Duplicate JSON keys, unknown contract members, invalid state transitions, unsafe paths, and real-backend acquisition fail closed.
-- Generated case, scenario, capability, environment, finding, run, fuzz campaign, and E1 experiment documents pass their JSON Schemas.
+- NuGet audit: no known vulnerable direct or transitive package reported by configured sources.
+- All eight simulator scenarios reach their expected classification.
+- Duplicate JSON keys, unknown members, unsafe paths, corrupt evidence, and real-backend acquisition fail closed.
+- G3: 256/256 simulated executions, first known signature at execution 175, 48 raw failure observations grouped into one exact signature.
+- E1: four 20-trial policy arms complete with all no-finding trials retained as right-censored observations.
+- E2: single-call 0/20 versus stateful 11/20 on a structurally stateful synthetic trigger; treated only as expressiveness evidence.
+- The 14-operation minimization fixture reduces to 3 operations and 188 canonical bytes with a 3/3 replay match.
+- Canonical G3, E1, and E2 artifacts pass hash and semantic verification.
+- Identically parameterized reruns produce byte-identical manifests.
 
-## Not implemented yet
+## Not implemented
 
-- Similarity-assisted clustering and manual split/merge audit records.
-- SQLite metadata for CAS references and retention garbage collection.
-- Controller resume from every intermediate evidence-production state.
-- Track B KMDF, Driver Verifier, real dump acquisition, and Hyper-V checkpoint replay. Track B remains blocked by environment and is not part of v1 completion.
+- Additional synthetic targets with coarse or delayed feedback.
+- Similarity-assisted clustering and auditable manual split/merge records.
+- SQLite reference metadata and retention garbage collection for content-addressed artifacts.
+- Resume from every intermediate evidence-production state.
+- KMDF test targets, IOCTL harness, Driver Verifier orchestration, real dump acquisition, and checkpoint replay.
+- Kernel coverage collection or evaluation against real drivers.
+
+Track B remains blocked by environment and is not part of Research Preview v0.1 completion.
